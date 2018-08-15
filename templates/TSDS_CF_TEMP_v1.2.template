@@ -156,7 +156,9 @@
                         "IpProtocol": "tcp",
                         "FromPort": "80",
                         "ToPort": "80",
-                        "CidrIp": "0.0.0.0/0"
+                        "CidrIp": {
+                            "Ref": "SecuredIp"
+                        }
                     },
                     {
                         "IpProtocol": "tcp",
@@ -205,15 +207,31 @@
             "Properties": {
                 "PolicyName": "TSDSRolePolicy",
                 "PolicyDocument": {
-                    "Statement": [
+                    "Statement": 
                         {
                             "Effect": "Allow",
                             "Action": [
-                                "ec2:DescribeSecurityGroups",
+                                "ec2:AuthorizeSecurityGroupEgress",
                                 "ec2:AuthorizeSecurityGroupIngress",
-                                "ec2:CreateSecurityGroup",
+                                "ec2:DeleteSecurityGroup",
+                                "ec2:RevokeSecurityGroupEgress",
                                 "ec2:RevokeSecurityGroupIngress"
                             ],
+                            "Resource": "arn:aws:ec2:*:*:security-group/*",
+                            "Condition": {
+                                "StringEquals": {
+                                    "ec2:Vpc": "arn:aws:ec2:*:*:vpc/vpc-<VPC-ID>"
+                                }
+                            }
+                        },
+                        {
+                            "Action": [
+                                "ec2:DescribeSecurityGroups",
+                                "ec2:DescribeSecurityGroupReferences",
+                                "ec2:DescribeStaleSecurityGroups",
+                                "ec2:DescribeVpcs"
+                            ],
+                            "Effect": "Allow",
                             "Resource": "*"
                         }
                     ]
