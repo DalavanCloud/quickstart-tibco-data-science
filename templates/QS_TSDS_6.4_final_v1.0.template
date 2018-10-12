@@ -1,0 +1,641 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  This CF template creates a VPC infrastructure for a multi-AZ, multi-tier
+  deployment of TIBCO Spotfire Data Science 6.4 on AWS. It deploys a VPC with
+  bastions. **WARNING** This template creates EC2 instances and related
+  resources. You will be billed for the AWS resources used if you create a stack
+  from this template.
+Metadata:
+  'AWS::CloudFormation::Interface':
+    ParameterGroups:
+      - Label:
+          default: Network Configuration
+        Parameters:
+          - VPCID
+          - VPCCIDR
+          - Subnet1ID
+          - Subnet2ID
+      - Label: TIBCO Spotfire DS Node 1 Configuration
+        Parameters:
+          - TSDSnode1AMIType
+          - TSDSnode1InstanceType
+          - KeyPairName
+          - BastionSecurityGroupID
+          - TSDSnode1ClientAccessSecurityGroupID
+      - Label: TIBCO Spotfire DS Node 2 Configuration
+        Parameters:
+          - TSDSnode2AMIType
+          - TSDSnode2InstanceType
+          - KeyPairName
+          - BastionSecurityGroupID
+          - TSDSnode2ClientAccessSecurityGroupID
+    ParameterLabels:
+      VPCID:
+        default: VPC ID
+      VPCCIDR:
+        default: VPC CIDR
+      Subnet1ID:
+        default: Subnet 1 ID
+      Subnet2ID:
+        default: Subnet 2 ID
+      TSDSnode1AMIType:
+        default: TSDS Node 1 Server AMI Type
+      TSDSnode1InstanceType:
+        default: TSDS Node 1 Server Instance Type
+      TSDSnode2AMIType:
+        default: TSDS Node 2 Server AMI Type
+      TSDSnode2InstanceType:
+        default: TSDS Node 2 Server Instance Type
+      BastionSecurityGroupID:
+        default: Bastion Security Group ID
+      KeyPairName:
+        default: SSH Key Name
+  'AWS::CloudFormation::Designer':
+    504728b2-02cb-4db9-93c0-78b285333aa0:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 60
+        'y': 90
+      z: 1
+      embeds: []
+    0ccf0fba-8f6f-4958-b7a5-350614954e3b:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 180
+        'y': 90
+      z: 1
+      embeds: []
+    06ba366c-79d7-4d0c-96b2-c2c4a5ca77d7:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 60
+        'y': 210
+      z: 1
+      embeds: []
+      isassociatedwith:
+        - 0ccf0fba-8f6f-4958-b7a5-350614954e3b
+    64e1b0f2-5de5-4a4c-b41c-b2d0caea7207:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 180
+        'y': 210
+      z: 1
+      embeds: []
+    c93e1cbe-bf5a-4c1e-9840-54631f632561:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 300
+        'y': 90
+      z: 1
+      embeds: []
+      isassociatedwith:
+        - 504728b2-02cb-4db9-93c0-78b285333aa0
+        - 64e1b0f2-5de5-4a4c-b41c-b2d0caea7207
+    94aaae5f-03d7-416b-99a3-49375a74a778:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 300
+        'y': 210
+      z: 1
+      embeds: []
+      isassociatedwith:
+        - 504728b2-02cb-4db9-93c0-78b285333aa0
+        - 64e1b0f2-5de5-4a4c-b41c-b2d0caea7207
+    35b0df3b-673d-4039-a311-0e90aa9dcf74:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 60
+        'y': 330
+      z: 1
+      embeds: []
+    997d3709-962a-4aae-8d65-14e3689983e1:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 180
+        'y': 330
+      z: 1
+      embeds: []
+      dependson:
+        - 35b0df3b-673d-4039-a311-0e90aa9dcf74
+    4d7566cf-ff09-4536-9872-e66491fbb0fe:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 300
+        'y': 330
+      z: 1
+      embeds: []
+      dependson:
+        - c93e1cbe-bf5a-4c1e-9840-54631f632561
+        - 997d3709-962a-4aae-8d65-14e3689983e1
+    d537fe06-ae10-4f08-8c6f-82c8bf69934c:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 420
+        'y': 90
+      z: 1
+      embeds: []
+    08cb79e6-2053-4d51-8e30-bd6ba93e6ecf:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 420
+        'y': 210
+      z: 1
+      embeds: []
+      dependson:
+        - d537fe06-ae10-4f08-8c6f-82c8bf69934c
+    2b4d2a22-d3c3-473b-bd26-adff4287e9cd:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 420
+        'y': 330
+      z: 1
+      embeds: []
+      dependson:
+        - 94aaae5f-03d7-416b-99a3-49375a74a778
+        - 08cb79e6-2053-4d51-8e30-bd6ba93e6ecf
+    6a76f51e-3eed-4f97-8676-dd8051a0ee3b:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 60
+        'y': 210
+      z: 1
+      embeds: []
+      isassociatedwith:
+        - 9110ba4b-83a8-49cb-8ccc-e10a5223e9d5
+      iscontainedinside:
+        - 5e963b54-9623-4963-b8c7-bd97e0e67462
+    5e963b54-9623-4963-b8c7-bd97e0e67462:
+      size:
+        width: 120
+        height: 110
+      position:
+        x: 60
+        'y': 450
+      z: 1
+      embeds:
+        - 9110ba4b-83a8-49cb-8ccc-e10a5223e9d5
+    9110ba4b-83a8-49cb-8ccc-e10a5223e9d5:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 90
+        'y': 480
+      z: 2
+      parent: 5e963b54-9623-4963-b8c7-bd97e0e67462
+      embeds: []
+      isassociatedwith:
+        - 64e1b0f2-5de5-4a4c-b41c-b2d0caea7207
+      iscontainedinside:
+        - 5e963b54-9623-4963-b8c7-bd97e0e67462
+Parameters:
+  DatabaseSubnets:
+    Default: 'subnet-6749a72f,subnet-c3033698'
+    Description: The subnets to place database instances in.
+    Type: 'List<AWS::EC2::Subnet::Id>'
+  BastionSecurityGroupID:
+    Description: >
+      ID of the bastion host security group to enable SSH connections (e.g.,
+      sg-7f16e910)
+    Type: 'AWS::EC2::SecurityGroup::Id'
+  TSDSAccessSecurityGroupID:
+    Type: 'AWS::EC2::SecurityGroup::Id'
+    Description: >-
+      ID of the security group for clients accessing TIBCO SDS(e.g.,
+      sg-7f16e910)
+  TSDSnode1InstanceType:
+    AllowedValues:
+      - m5.2xlarge
+      - m5.4xlarge
+    ConstraintDescription: Must contain valid instance type
+    Default: m5.2xlarge
+    Description: Type of EC2 instance for TIBCO Spotfire DS 6.4 AMI
+    Type: String
+  TSDSnode2InstanceType:
+    AllowedValues:
+      - m5.2xlarge
+      - m5.4xlarge
+    ConstraintDescription: Must contain valid instance type
+    Default: m5.2xlarge
+    Description: Type of EC2 instance for TIBCO Spotfire DS 6.4 AMI
+    Type: String
+  KeyPairName:
+    Description: >
+      Name of an existing EC2 key pair. All instances will launch with this key
+      pair.
+    Type: 'AWS::EC2::KeyPair::KeyName'
+  Subnet1ID:
+    Description: 'ID of Subnet 1 in Availability Zone 1 (e.g., subnet-a0246dcd)'
+    Type: 'AWS::EC2::Subnet::Id'
+  Subnet2ID:
+    Description: 'ID of Subnet 2 in Availability Zone 2 (e.g., subnet-b1f432cd)'
+    Type: 'AWS::EC2::Subnet::Id'
+  VPCID:
+    Description: ID of your existing VPC for deployment
+    Type: 'AWS::EC2::VPC::Id'
+  VPCCIDR:
+    AllowedPattern: >-
+      ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/(1[6-9]|2[0-8]))$
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
+    Default: 192.168.0.0/16
+    Description: CIDR block for the VPC
+    Type: String
+Mappings:
+  AWSRegionAMI:
+    us-west-1:
+      '64': ami-0509ca366708b4622
+Rules:
+  KeyPairsNotEmpty:
+    Assertions:
+      - Assert: !Not 
+          - 'Fn::EachMemberEquals':
+              - 'Fn::RefAll': 'AWS::EC2::KeyPair::KeyName'
+              - ''
+        AssertDescription: All key pair parameters must not be empty
+  EFSSupportedRegionRule:
+    Assertions:
+      - Assert:
+          'Fn::Contains':
+            - - us-east-1
+              - us-east-2
+              - us-west-1
+              - us-west-2
+              - eu-west-1
+              - ap-southeast-2
+              - ap-northeast-1
+              - ap-northeast-2
+              - eu-central-1
+            - !Ref 'AWS::Region'
+        AssertDescription: >-
+          This Quick Start utilizes Amazon EFS which is only available in the
+          us-east-1 (N. Virginia), us-east-2 (Ohio), us-west-1 (N. California),
+          us-west-2 (Oregon), eu-west-1 (Ireland), eu-central-1 (Frankfurt),
+          ap-northeast-1 (Tokyo), ap-northeast-2 (Seoul), and ap-southeast-2
+          (Sydney) regions. Please launch the stack in one of these  regions
+Resources:
+  DatabaseSubnetGroup:
+    Type: 'AWS::RDS::DBSubnetGroup'
+    Properties:
+      DBSubnetGroupDescription: CloudFormation managed DB subnet group.
+      SubnetIds:
+        Ref: DatabaseSubnets
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 5e963b54-9623-4963-b8c7-bd97e0e67462
+  TSDSDBCluster:
+    Type: 'AWS::RDS::DBCluster'
+    Properties:
+      Engine: aurora-postgresql
+      DBClusterIdentifier: tsdsdbcluster
+      DBClusterParameterGroupName: default.aurora-postgresql9.6
+      DatabaseName: postgres_chorus
+      MasterUsername: postgres_chorus
+      MasterUserPassword: tibcoAlpine!23
+      Port: 8543
+      DBSubnetGroupName: !Ref DatabaseSubnetGroup
+      VpcSecurityGroupIds:
+        - !Ref EFSNFSSecurityGroup
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 9110ba4b-83a8-49cb-8ccc-e10a5223e9d5
+  TSDSDB:
+    Type: 'AWS::RDS::DBInstance'
+    Properties:
+      Engine: aurora-postgresql
+      DBClusterIdentifier: !Ref TSDSDBCluster
+      DBSubnetGroupName: !Ref DatabaseSubnetGroup
+      DBInstanceClass: db.r4.large
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 6a76f51e-3eed-4f97-8676-dd8051a0ee3b
+  EFSNFSSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: TIBCO Spotfire DS NFS Access SG
+      VpcId: !Ref VPCID
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '2049'
+          ToPort: '2049'
+          CidrIp: !Ref VPCCIDR
+        - IpProtocol: tcp
+          FromPort: '8543'
+          ToPort: '8543'
+          CidrIp: !Ref VPCCIDR
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 64e1b0f2-5de5-4a4c-b41c-b2d0caea7207
+  TSDSnode1SecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Control access to the TIBCO Spotfire DS instances
+      VpcId: !Ref VPCID
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '8080'
+          ToPort: '8080'
+          CidrIp: !Ref VPCCIDR
+        - IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: !Ref VPCCIDR
+        - IpProtocol: tcp
+          FromPort: '2049'
+          ToPort: '2049'
+          CidrIp: !Ref VPCCIDR
+        - IpProtocol: tcp
+          FromPort: '8543'
+          ToPort: '8543'
+          CidrIp: !Ref VPCCIDR
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: d537fe06-ae10-4f08-8c6f-82c8bf69934c
+  TSDSnode2SecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Control access to the TIBCO Spotfire DS instances
+      VpcId: !Ref VPCID
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '8080'
+          ToPort: '8080'
+          CidrIp: !Ref VPCCIDR
+        - IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: !Ref VPCCIDR
+        - IpProtocol: tcp
+          FromPort: '2049'
+          ToPort: '2049'
+          CidrIp: !Ref VPCCIDR
+        - IpProtocol: tcp
+          FromPort: '8543'
+          ToPort: '8543'
+          CidrIp: !Ref VPCCIDR
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 35b0df3b-673d-4039-a311-0e90aa9dcf74
+  IamInstanceRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 0ccf0fba-8f6f-4958-b7a5-350614954e3b
+  IamInstanceRoleProfile:
+    Type: 'AWS::IAM::InstanceProfile'
+    Properties:
+      Path: /
+      Roles:
+        - !Ref IamInstanceRole
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 06ba366c-79d7-4d0c-96b2-c2c4a5ca77d7
+  EFSFileSystem:
+    Type: 'AWS::EFS::FileSystem'
+    Properties:
+      PerformanceMode: generalPurpose
+      FileSystemTags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-efs-volume'
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 504728b2-02cb-4db9-93c0-78b285333aa0
+  MountTarget1:
+    Type: 'AWS::EFS::MountTarget'
+    Properties:
+      FileSystemId: !Ref EFSFileSystem
+      SubnetId: !Ref Subnet1ID
+      SecurityGroups:
+        - !Ref EFSNFSSecurityGroup
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 94aaae5f-03d7-416b-99a3-49375a74a778
+  MountTarget2:
+    Type: 'AWS::EFS::MountTarget'
+    Properties:
+      FileSystemId: !Ref EFSFileSystem
+      SubnetId: !Ref Subnet2ID
+      SecurityGroups:
+        - !Ref EFSNFSSecurityGroup
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: c93e1cbe-bf5a-4c1e-9840-54631f632561
+  TSDSnode1NIC:
+    Type: 'AWS::EC2::NetworkInterface'
+    DependsOn: TSDSnode1SecurityGroup
+    Properties:
+      Description: TIBCO Spotfire DS node 1 NIC
+      GroupSet:
+        - !Ref TSDSnode1SecurityGroup
+      SourceDestCheck: true
+      SubnetId: !Ref Subnet1ID
+      Tags:
+        - Key: Name
+          Value: TIBCO Spotfire DS node 1 NIC
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 08cb79e6-2053-4d51-8e30-bd6ba93e6ecf
+  TSDSnode2NIC:
+    Type: 'AWS::EC2::NetworkInterface'
+    DependsOn: TSDSnode2SecurityGroup
+    Properties:
+      Description: TIBCO Spotfire DS node 2 NIC
+      GroupSet:
+        - !Ref TSDSnode2SecurityGroup
+      SourceDestCheck: true
+      SubnetId: !Ref Subnet2ID
+      Tags:
+        - Key: Name
+          Value: TIBCO Spotfire DS node 2 NIC
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 997d3709-962a-4aae-8d65-14e3689983e1
+  TSDSnode1Instance:
+    Type: 'AWS::EC2::Instance'
+    DependsOn:
+      - TSDSnode1NIC
+      - MountTarget1
+      - TSDSDB
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 2b4d2a22-d3c3-473b-bd26-adff4287e9cd
+    Properties:
+      KeyName: !Ref KeyPairName
+      DisableApiTermination: 'false'
+      ImageId: !FindInMap 
+        - AWSRegionAMI
+        - !Ref 'AWS::Region'
+        - '64'
+      InstanceType: !Ref TSDSnode1InstanceType
+      Monitoring: 'false'
+      Tags:
+        - Key: Application
+          Value: AWS Quick Start (TIBCO Spotfire Data Science)
+        - Key: Name
+          Value: !Sub 'TIBCO Spotfire DS Node 1 (${AWS::StackName})'
+      NetworkInterfaces:
+        - NetworkInterfaceId: !Ref TSDSnode1NIC
+          DeviceIndex: '0'
+      IamInstanceProfile: !Ref IamInstanceRoleProfile
+      UserData: 
+        Fn::Base64: !Sub |
+            #!/bin/bash
+            # Script to configure Node 1 of TSDS 6.4
+            # Create directory to mount EFS DIR
+            mkdir /tsds_efs
+              
+            # Mount EFS and add mount to fstab to restore on reboot
+            mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport ${EFSFileSystem}.efs.${AWS::Region}.amazonaws.com:/ /tsds_efs
+            echo "${EFSFileSystem}.efs.${AWS::Region}.amazonaws.com:/ /tsds_efs     nfs4    defaults,_netdev        0       0" >> /etc/fstab
+              
+            # Create shared directory structure
+            mkdir --parents /tsds_efs/local/
+            mkdir --parents /tsds_efs/data/tsds/
+              
+            # Change ownership to tsds
+            chown tsds:tsds -R /tsds_efs
+              
+            # Copy install DIR to EFS Shared DIR
+            su -c "cp -a /usr/local/tsds/ /tsds_efs/local/" - tsds
+            su -c "cp -a /data/tsds/public/ /tsds_efs/data/tsds/" - tsds
+              
+            # Rename old install DIR and replace with soft link to new EFS DIR
+            mv /usr/local/tsds /usr/local/tsds_old
+            mv /data/tsds/public /data/tsds/public_old
+            ln -s /tsds_efs/local/tsds /usr/local/tsds
+            ln -s /tsds_efs/data/tsds/public /data/tsds/public
+              
+            # start postgres service to perform backup
+            su -c "source /usr/local/tsds/chorus_path.sh && /usr/local/tsds/chorus_control.sh start postgres" - tsds
+              
+            # backup postgres and shutdown postgres
+            su -c "source /usr/local/tsds/chorus_path.sh && /usr/local/tsds/current/postgres/bin/pg_dump -Fc -p 8543 -U postgres_chorus chorus > /tmp/chorusdb.dump" - tsds
+            su -c "source /usr/local/tsds/chorus_path.sh && /usr/local/tsds/chorus_control.sh stop postgres" - tsds
+              
+            #Backup database.yml
+            su -c "mv /usr/local/tsds/shared/database.yml /usr/local/tsds/shared/database.yml.old" - tsds
+            su -c "touch /usr/local/tsds/shared/database.yml" - tsds
+            su -c "chmod 644 /usr/local/tsds/shared/database.yml"
+              
+            # Reconfigure database.yml to point to Amazon RDS
+            cat >> /usr/local/tsds/shared/database.yml <<EOF
+            production:  
+              adapter: jdbcpostgresql  
+              encoding: unicode  
+              database: chorus  
+              username: postgres_chorus  
+              password: tibcoAlpine!23  
+              min_messages: warning  
+              host: ${TSDSDBCluster.Endpoint.Address}
+              port: '8543'
+              pool: 40
+            EOF
+                
+            #update .pgpass
+            su -c "mv /usr/local/tsds/.pgpass /usr/local/tsds/.pgpass_old" - tsds
+            su -c "touch /usr/local/tsds/.pgpass" - tsds
+            echo "*:*:*:postgres_chorus:tibcoAlpine!23" >> /usr/local/tsds/.pgpass
+            su -c "chmod 400 /usr/local/tsds/.pgpass" - tsds
+              
+            # restore postgres
+            su -c "/usr/local/tsds/current/postgres/bin/createdb chorus -p 8543 -h ${TSDSDBCluster.Endpoint.Address} -U postgres_chorus" - tsds
+            su -c "source /usr/local/tsds/chorus_path.sh && /usr/local/tsds/current/postgres/bin/pg_restore -d chorus -p 8543 -h ${TSDSDBCluster.Endpoint.Address} -U postgres_chorus /tmp/chorusdb.dump"
+  TSDSnode2Instance:
+    Type: 'AWS::EC2::Instance'
+    DependsOn:
+      - TSDSnode2NIC
+      - MountTarget2
+      - TSDSDB
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 4d7566cf-ff09-4536-9872-e66491fbb0fe
+    Properties:
+      KeyName: !Ref KeyPairName
+      DisableApiTermination: 'false'
+      ImageId: !FindInMap 
+        - AWSRegionAMI
+        - !Ref 'AWS::Region'
+        - '64'
+      InstanceType: !Ref TSDSnode2InstanceType
+      Monitoring: 'false'
+      Tags:
+        - Key: Application
+          Value: AWS Quick Start (TIBCO Spotfire Data Science)
+        - Key: Name
+          Value: !Sub 'TIBCO Spotfire DS Node 2 (${AWS::StackName})'
+      NetworkInterfaces:
+        - NetworkInterfaceId: !Ref TSDSnode2NIC
+          DeviceIndex: '0'
+      IamInstanceProfile: !Ref IamInstanceRoleProfile
+      UserData: 
+        Fn::Base64: !Sub |
+            #!/bin/sh
+            # Script to configure Node 2 of TSDS 6.4
+            # Mount the EFS filesystems and create directory structure
+            mkdir /tsds_efs
+              
+            # Mount EFS and add mount to fstab to restore on reboot
+            mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport ${EFSFileSystem}.efs.${AWS::Region}.amazonaws.com:/ /tsds_efs
+            echo "${EFSFileSystem}.efs.${AWS::Region}.amazonaws.com:/ /tsds_efs     nfs4    defaults,_netdev        0       0" >> /etc/fstab
+              
+            # Rename old install DIR and replace with soft link to EFS DIR
+            mv /usr/local/tsds /usr/local/tsds_old
+            mv /data/tsds/public/ /data/tsds/public_old
+            ln -s /tsds_efs/local/tsds /usr/local/tsds
+            ln -s /tsds_efs/data/tsds/public/ /data/tsds/public
+  WaitHandle:
+    Type: 'AWS::CloudFormation::WaitConditionHandle'
+Outputs:
+  TSDSNode1URL:
+    Value: !Join 
+      - ''
+      - - 'http://'
+        - !GetAtt 
+          - TSDSnode1Instance
+          - PublicDnsName
+        - ':8080'
+    Description: TIBCO Spotfire Data Science Node 1 URL
+  TSDSNode2URL:
+    Value: !Join 
+      - ''
+      - - 'http://'
+        - !GetAtt 
+          - TSDSnode2Instance
+          - PublicDnsName
+        -':8080'
+    Description: TIBCO Spotfire Data Science Node 2 URL
