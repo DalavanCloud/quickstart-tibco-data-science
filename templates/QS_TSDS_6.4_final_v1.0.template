@@ -21,14 +21,12 @@ Metadata:
           - TSDSnode1InstanceType
           - KeyPairName
           - BastionSecurityGroupID
-          - TSDSnode1ClientAccessSecurityGroupID
       - Label: TIBCO Spotfire DS Node 2 Configuration
         Parameters:
           - TSDSnode2AMIType
           - TSDSnode2InstanceType
           - KeyPairName
           - BastionSecurityGroupID
-          - TSDSnode2ClientAccessSecurityGroupID
     ParameterLabels:
       VPCID:
         default: VPC ID
@@ -215,20 +213,11 @@ Metadata:
       iscontainedinside:
         - 5e963b54-9623-4963-b8c7-bd97e0e67462
 Parameters:
-  DatabaseSubnets:
-    Default: 'subnet-6749a72f,subnet-c3033698'
-    Description: The subnets to place database instances in.
-    Type: 'List<AWS::EC2::Subnet::Id>'
   BastionSecurityGroupID:
     Description: >
       ID of the bastion host security group to enable SSH connections (e.g.,
       sg-7f16e910)
     Type: 'AWS::EC2::SecurityGroup::Id'
-  TSDSAccessSecurityGroupID:
-    Type: 'AWS::EC2::SecurityGroup::Id'
-    Description: >-
-      ID of the security group for clients accessing TIBCO SDS(e.g.,
-      sg-7f16e910)
   TSDSnode1InstanceType:
     AllowedValues:
       - m5.2xlarge
@@ -270,10 +259,12 @@ Mappings:
   AWSRegionAMI:
     us-west-1:
       '64': ami-0509ca366708b4622
+    us-east-1:
+      '64': ami-0e057d4facc96b5d8
 Rules:
   KeyPairsNotEmpty:
     Assertions:
-      - Assert: !Not 
+      - Assert: !Not
           - 'Fn::EachMemberEquals':
               - 'Fn::RefAll': 'AWS::EC2::KeyPair::KeyName'
               - ''
@@ -304,7 +295,8 @@ Resources:
     Properties:
       DBSubnetGroupDescription: CloudFormation managed DB subnet group.
       SubnetIds:
-        Ref: DatabaseSubnets
+        - !Ref Subnet1ID
+        - !Ref Subnet2ID
     Metadata:
       'AWS::CloudFormation::Designer':
         id: 5e963b54-9623-4963-b8c7-bd97e0e67462
@@ -497,7 +489,7 @@ Resources:
     Properties:
       KeyName: !Ref KeyPairName
       DisableApiTermination: 'false'
-      ImageId: !FindInMap 
+      ImageId: !FindInMap
         - AWSRegionAMI
         - !Ref 'AWS::Region'
         - '64'
@@ -509,69 +501,74 @@ Resources:
         - Key: Name
           Value: !Sub 'TIBCO Spotfire DS Node 1 (${AWS::StackName})'
       NetworkInterfaces:
+        - AssociatePublicIpAddress: 'true'
+          DeviceIndex: '0'
         - NetworkInterfaceId: !Ref TSDSnode1NIC
           DeviceIndex: '0'
       IamInstanceProfile: !Ref IamInstanceRoleProfile
-      UserData: 
+      UserData:
         Fn::Base64: !Sub |
             #!/bin/bash
             # Script to configure Node 1 of TSDS 6.4
             # Create directory to mount EFS DIR
             mkdir /tsds_efs
-              
+
             # Mount EFS and add mount to fstab to restore on reboot
             mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport ${EFSFileSystem}.efs.${AWS::Region}.amazonaws.com:/ /tsds_efs
             echo "${EFSFileSystem}.efs.${AWS::Region}.amazonaws.com:/ /tsds_efs     nfs4    defaults,_netdev        0       0" >> /etc/fstab
-              
+
             # Create shared directory structure
             mkdir --parents /tsds_efs/local/
             mkdir --parents /tsds_efs/data/tsds/
-              
+
             # Change ownership to tsds
             chown tsds:tsds -R /tsds_efs
-              
+
             # Copy install DIR to EFS Shared DIR
             su -c "cp -a /usr/local/tsds/ /tsds_efs/local/" - tsds
             su -c "cp -a /data/tsds/public/ /tsds_efs/data/tsds/" - tsds
-              
+            su -c "cp -a /data/tsds/system/ /tsds_efs/data/tsds/" - tsds
+
             # Rename old install DIR and replace with soft link to new EFS DIR
             mv /usr/local/tsds /usr/local/tsds_old
             mv /data/tsds/public /data/tsds/public_old
+            mv /data/tsds/system /data/tsds/system_old
             ln -s /tsds_efs/local/tsds /usr/local/tsds
             ln -s /tsds_efs/data/tsds/public /data/tsds/public
-              
+            ln -s /tsds_efs/data/tsds/system /data/tsds/system
+
             # start postgres service to perform backup
             su -c "source /usr/local/tsds/chorus_path.sh && /usr/local/tsds/chorus_control.sh start postgres" - tsds
-              
+
             # backup postgres and shutdown postgres
             su -c "source /usr/local/tsds/chorus_path.sh && /usr/local/tsds/current/postgres/bin/pg_dump -Fc -p 8543 -U postgres_chorus chorus > /tmp/chorusdb.dump" - tsds
             su -c "source /usr/local/tsds/chorus_path.sh && /usr/local/tsds/chorus_control.sh stop postgres" - tsds
-              
+
             #Backup database.yml
             su -c "mv /usr/local/tsds/shared/database.yml /usr/local/tsds/shared/database.yml.old" - tsds
             su -c "touch /usr/local/tsds/shared/database.yml" - tsds
             su -c "chmod 644 /usr/local/tsds/shared/database.yml"
-              
+
             # Reconfigure database.yml to point to Amazon RDS
             cat >> /usr/local/tsds/shared/database.yml <<EOF
-            production:  
-              adapter: jdbcpostgresql  
-              encoding: unicode  
-              database: chorus  
-              username: postgres_chorus  
-              password: tibcoAlpine!23  
-              min_messages: warning  
+            production:
+              adapter: jdbcpostgresql
+              encoding: unicode
+              database: chorus
+              username: postgres_chorus
+              password: tibcoAlpine!23
+              min_messages: warning
               host: ${TSDSDBCluster.Endpoint.Address}
               port: '8543'
               pool: 40
             EOF
-                
+
             #update .pgpass
             su -c "mv /usr/local/tsds/.pgpass /usr/local/tsds/.pgpass_old" - tsds
             su -c "touch /usr/local/tsds/.pgpass" - tsds
             echo "*:*:*:postgres_chorus:tibcoAlpine!23" >> /usr/local/tsds/.pgpass
             su -c "chmod 400 /usr/local/tsds/.pgpass" - tsds
-              
+
             # restore postgres
             su -c "/usr/local/tsds/current/postgres/bin/createdb chorus -p 8543 -h ${TSDSDBCluster.Endpoint.Address} -U postgres_chorus" - tsds
             su -c "source /usr/local/tsds/chorus_path.sh && /usr/local/tsds/current/postgres/bin/pg_restore -d chorus -p 8543 -h ${TSDSDBCluster.Endpoint.Address} -U postgres_chorus /tmp/chorusdb.dump"
@@ -587,7 +584,7 @@ Resources:
     Properties:
       KeyName: !Ref KeyPairName
       DisableApiTermination: 'false'
-      ImageId: !FindInMap 
+      ImageId: !FindInMap
         - AWSRegionAMI
         - !Ref 'AWS::Region'
         - '64'
@@ -599,20 +596,22 @@ Resources:
         - Key: Name
           Value: !Sub 'TIBCO Spotfire DS Node 2 (${AWS::StackName})'
       NetworkInterfaces:
+        - AssociatePublicIpAddress: 'true'
+          DeviceIndex: '0'
         - NetworkInterfaceId: !Ref TSDSnode2NIC
           DeviceIndex: '0'
       IamInstanceProfile: !Ref IamInstanceRoleProfile
-      UserData: 
+      UserData:
         Fn::Base64: !Sub |
             #!/bin/sh
             # Script to configure Node 2 of TSDS 6.4
             # Mount the EFS filesystems and create directory structure
             mkdir /tsds_efs
-              
+
             # Mount EFS and add mount to fstab to restore on reboot
             mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport ${EFSFileSystem}.efs.${AWS::Region}.amazonaws.com:/ /tsds_efs
             echo "${EFSFileSystem}.efs.${AWS::Region}.amazonaws.com:/ /tsds_efs     nfs4    defaults,_netdev        0       0" >> /etc/fstab
-              
+
             # Rename old install DIR and replace with soft link to EFS DIR
             mv /usr/local/tsds /usr/local/tsds_old
             mv /data/tsds/public/ /data/tsds/public_old
@@ -622,20 +621,20 @@ Resources:
     Type: 'AWS::CloudFormation::WaitConditionHandle'
 Outputs:
   TSDSNode1URL:
-    Value: !Join 
+    Value: !Join
       - ''
       - - 'http://'
-        - !GetAtt 
+        - !GetAtt
           - TSDSnode1Instance
           - PublicDnsName
         - ':8080'
     Description: TIBCO Spotfire Data Science Node 1 URL
   TSDSNode2URL:
-    Value: !Join 
+    Value: !Join
       - ''
       - - 'http://'
-        - !GetAtt 
+        - !GetAtt
           - TSDSnode2Instance
           - PublicDnsName
-        -':8080'
+        - ':8080'
     Description: TIBCO Spotfire Data Science Node 2 URL
