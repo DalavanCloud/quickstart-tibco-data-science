@@ -11,9 +11,7 @@ Metadata:
           default: VPC & Bastion Configuration
         Parameters:
           - AvailabilityZones
-          - AdminRemoteAccessCIDR
           - AdminConsoleAccessCIDR
-          - ClientAppAccessCIDR
           - KeyPairName
           - BastionAMIOS
           - BastionInstanceType
@@ -31,16 +29,12 @@ Metadata:
     ParameterLabels:
       AdminConsoleAccessCIDR:
         default: Allowed Admin Web Console External Access CIDR
-      AdminRemoteAccessCIDR:
-        default: Allowed Bastion External Access CIDR
       AvailabilityZones:
         default: Availability Zones
       BastionAMIOS:
         default: Bastion AMI Operating System
       BastionInstanceType:
         default: Bastion Instance Type
-      ClientAppAccessCIDR:
-        default: Allowed Client Application External Access CIDR
       TSDSowner:
         default: TSDS Instance Owner
       TSDSInstanceName:
@@ -54,23 +48,11 @@ Metadata:
       QSS3KeyPrefix:
         default: Quick Start S3 Key Prefix
 Parameters:
-  AdminRemoteAccessCIDR:
-    AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$
-    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/x
-    Description: The CIDR IP range that is permitted to access the IBM MQ server via
-      the Bastion Server. We recommend that you set this value to a trusted IP range.
-    Type: String
   AdminConsoleAccessCIDR:
     AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$
     ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/x
-    Description: The CIDR IP range that is permitted to access the IBM MQ Web Console
+    Description: The CIDR IP range that is permitted to access the TIBCO Spotfire Data Science Web Console
       via the ELB. We recommend that you set this value to a trusted IP range.
-    Type: String
-  ClientAppAccessCIDR:
-    AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$
-    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/x
-    Description: The CIDR IP range that is permitted to allow access for IBM MQ Client
-      Applications. We recommend that you set this value to a trusted IP range.
     Type: String
   AvailabilityZones:
     Description: >-
@@ -122,11 +104,11 @@ Parameters:
     Description: Type of EC2 instance for TIBCO Spotfire DS 6.4 AMI
     Type: String
   TSDSInstanceName:
-    Description: Name for the IBM MQ instance that is deployed to EC2
+    Description: Name for the TIBCO Spotfire Data Science instance that is deployed to EC2
     Type: String
     Default: TSDS
   TSDSowner:
-    Description: Set Owner tag for the IBM MQ instance
+    Description: Set Owner tag for the TIBCO Spotfire Data Science instance
     Default: tsds-owner
     Type: String
   QSS3BucketName:
@@ -169,6 +151,7 @@ Rules:
             - us-west-1
             - eu-west-1
             - ap-southeast-2
+            - ap-southeast-1
             - ap-northeast-1
             - ap-northeast-2
             - eu-central-1
@@ -205,7 +188,7 @@ Resources:
         PublicSubnet2ID: !GetAtt VPCStack.Outputs.PublicSubnet2ID
         QSS3BucketName: !Ref QSS3BucketName
         QSS3KeyPrefix: !Sub '${QSS3KeyPrefix}submodules/quickstart-linux-bastion/'
-        RemoteAccessCIDR: !Ref AdminRemoteAccessCIDR
+        RemoteAccessCIDR: !Ref AdminConsoleAccessCIDR
         VPCID:
           Fn::GetAtt:
           - VPCStack
@@ -225,8 +208,6 @@ Resources:
           Fn::GetAtt:
           - BastionStack
           - Outputs.BastionSecurityGroupID
-        ClientAppAccessCIDR:
-          Ref: ClientAppAccessCIDR
         KeyPairName:
           Ref: KeyPairName
         TSDSInstanceName:
