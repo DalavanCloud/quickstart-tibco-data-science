@@ -226,15 +226,15 @@ Rules:
 Mappings:
   AWSAMIRegionMap:
     us-west-1:
-      '64': ami-0bf4023ceb4f4e040
+      '64': ami-0011fcb9bcf4b953c
     us-west-2:
-      '64': ami-04c5f789ecde281b0
+      '64': ami-076997dfc446c148e
     us-east-1:
       '64': ami-06b06190b35ea7b3f
     ap-southeast-1:
-      '64': ami-02923f8ebf2dbabb3
+      '64': ami-08603a0db5317c067
     eu-west-1:
-      '64': ami-06442ae55a8ed81e5
+      '64': ami-0eb1b1c4b08398138
 Resources:
   InstanceRole:
     Type: 'AWS::IAM::Role'
@@ -676,44 +676,8 @@ Resources:
       VpcId: !Ref VPCID
       SecurityGroupIngress:
         - IpProtocol: tcp
-          FromPort: '8020'
-          ToPort: '8020'
-          SourceSecurityGroupId: !Ref TSDSSecurityGroup
-        - IpProtocol: tcp
-          FromPort: '8032'
-          ToPort: '8032'
-          SourceSecurityGroupId: !Ref TSDSSecurityGroup
-        - IpProtocol: tcp
-          FromPort: '9083'
-          ToPort: '9083'
-          SourceSecurityGroupId: !Ref TSDSSecurityGroup
-        - IpProtocol: tcp
-          FromPort: '10000'
-          ToPort: '10000'
-          SourceSecurityGroupId: !Ref TSDSSecurityGroup
-        - IpProtocol: tcp
-          FromPort: '12300'
-          ToPort: '12600'
-          SourceSecurityGroupId: !Ref TSDSSecurityGroup
-        - IpProtocol: tcp
-          FromPort: '8300'
-          ToPort: '8300'
-          SourceSecurityGroupId: !Ref TSDSSecurityGroup
-        - IpProtocol: tcp
-          FromPort: '50010'
-          ToPort: '50010'
-          SourceSecurityGroupId: !Ref TSDSSecurityGroup
-        - IpProtocol: tcp
-          FromPort: '9090'
-          ToPort: '9090'
-          SourceSecurityGroupId: !Ref TSDSSecurityGroup
-        - IpProtocol: tcp
-          FromPort: '10020'
-          ToPort: '10020'
-          SourceSecurityGroupId: !Ref TSDSSecurityGroup
-        - IpProtocol: tcp
-          FromPort: '9080'
-          ToPort: '9080'
+          FromPort: '0'
+          ToPort: '65535'
           SourceSecurityGroupId: !Ref TSDSSecurityGroup
         - IpProtocol: tcp
           FromPort: '10000'
