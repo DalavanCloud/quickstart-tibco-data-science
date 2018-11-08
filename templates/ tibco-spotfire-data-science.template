@@ -644,6 +644,7 @@ Resources:
         TerminationProtected: 'false'
         Ec2KeyName: !Ref KeyPairName
         Ec2SubnetId: !Ref PrivateSubnet1ID
+        ServiceAccessSecurityGroup: !Ref EmrServiceAccessSecurityGroup
         EmrManagedMasterSecurityGroup: !Ref EmrMasterPrivateSecurityGroup
         EmrManagedSlaveSecurityGroup: !Ref EmrSlavePrivateSecurityGroup
         AdditionalMasterSecurityGroups:
