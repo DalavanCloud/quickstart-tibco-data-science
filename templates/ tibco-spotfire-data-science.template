@@ -28,7 +28,34 @@ Metadata:
       - TSDSowner
       - TSDSInstanceName
       - TSDSInstanceType
+    - Label:
+        default: Amazon EMR Configuration
+      Parameters:
+      - EMRMasterInstanceType
+      - EMRCoreInstanceType
+      - EMRClusterName
+      - EMRCoreNodes
+      - EMRLogBucket
+    - Label:
+        default: AWS Quick Start Configuration
+      Parameters:
+      - QSS3BucketName
+      - QSS3KeyPrefix
     ParameterLabels:
+      QSS3BucketName:
+        default: Quick Start S3 Bucket Name
+      QSS3KeyPrefix:
+        default: Quick Start S3 Key Prefix
+      EMRClusterName:
+        default: EMR Cluster Name
+      EMRCoreInstanceType:
+        default: EMR Core Instance Type
+      EMRCoreNodes:
+        default: EMR Core Nodes
+      EMRLogBucket:
+        default: EMR Logs Bucket Name
+      EMRMasterInstanceType:
+        default: EMR Master Instance Type
       AdminConsoleAccessCIDR:
         default: Allowed Admin Web Console External Access CIDR
       BastionSecurityGroupID:
@@ -52,6 +79,58 @@ Metadata:
       VPCID:
         default: VPC ID
 Parameters:
+  QSS3BucketName:
+    AllowedPattern: '^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$'
+    ConstraintDescription: >-
+      Quick Start bucket name can include numbers, lowercase letters, uppercase
+      letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Default: aws-quickstart
+    Description: >-
+      Do not change: S3 bucket name for the Quick Start assets. Quick Start
+      bucket name can include numbers, lowercase letters, uppercase letters, and
+      hyphens (-). It cannot start or end with a hyphen (-).
+    Type: String
+  QSS3KeyPrefix:
+    AllowedPattern: '^[0-9a-zA-Z-][0-9a-zA-Z-/]*/$'
+    ConstraintDescription: >-
+      Quick Start key prefix can include numbers, lowercase letters, uppercase
+      letters, hyphens (-), and forward slash (/).
+    Default: quickstart-tibco-spotfire-data-science/
+    Description: >-
+      S3 key prefix for the Quick Start assets. Quick Start key prefix can
+      include numbers, lowercase letters, uppercase letters, hyphens (-), and
+      forward slash (/).
+    Type: String
+  EMRClusterName:
+    Description: Enter a name for your EMR cluster
+    Type: String
+  EMRCoreInstanceType:
+    AllowedValues:
+      - m4.xlarge
+      - m4.2xlarge
+      - m4.4xlarge
+      - m4.10xlarge
+    Default: m4.xlarge
+    Description: Enter the instance type for the EMR core nodes. Default is m4.xlarge
+    Type: String
+  EMRCoreNodes:
+    Description: Enter the number of Core Nodes. Minimum is 1.
+    MaxValue: '500'
+    MinValue: '1'
+    Type: Number
+  EMRLogBucket:
+    Description: Enter the S3 bucket for the EMR logs
+    Type: String
+  EMRMasterInstanceType:
+    AllowedValues:
+      - m4.large
+      - m4.xlarge
+      - m4.2xlarge
+      - m4.4xlarge
+      - m4.10xlarge
+    Default: m4.xlarge
+    Description: Enter the instance type for the EMR master node. Default is m4.xlarge
+    Type: String
   RDSUsername:
     Default: postgres_chorus
     Description: >-
@@ -147,11 +226,11 @@ Rules:
 Mappings:
   AWSAMIRegionMap:
     us-west-1:
-      '64': ami-0509ca366708b4622
+      '64': ami-0bf4023ceb4f4e040
     us-west-2:
       '64': ami-04c5f789ecde281b0
     us-east-1:
-      '64': ami-0e057d4facc96b5d8
+      '64': ami-06b06190b35ea7b3f
     ap-southeast-1:
       '64': ami-02923f8ebf2dbabb3
     eu-west-1:
@@ -169,6 +248,15 @@ Resources:
           Action:
           - sts:AssumeRole
       Path: /
+      Policies:
+        - PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Action:
+                  - 's3:GetObject'
+                Resource: !Sub 'arn:aws:s3:::${QSS3BucketName}/${QSS3KeyPrefix}*'
+                Effect: Allow
+          PolicyName: aws-quick-start-s3-policy
   InstanceRolePolicy:
     Type: 'AWS::IAM::Policy'
     Properties:
@@ -228,16 +316,16 @@ Resources:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
       VpcId: !Ref VPCID
-      GroupDescription: Enable SSH access via port 22, and access to 8080 via ELB
+      GroupDescription: Enable TSDS UI access via port 8080 through ALB and port 22 through Bastion
       SecurityGroupIngress:
-      - IpProtocol: tcp
-        FromPort: '22'
-        ToPort: '22'
-        SourceSecurityGroupId: !Ref BastionSecurityGroupID
       - IpProtocol: tcp
         FromPort: '8080'
         ToPort: '8080'
         SourceSecurityGroupId: !Ref TSDSELBSecurityGroup
+      - IpProtocol: tcp
+        FromPort: '22'
+        ToPort: '22'
+        SourceSecurityGroupId: !Ref BastionSecurityGroupID
   TSDSELBSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
@@ -265,7 +353,6 @@ Resources:
       - TSDSDBCluster
       - TSDSFileSystem
     Properties:
-      AssociatePublicIpAddress: true
       ImageId:
          Fn::FindInMap:
          - AWSAMIRegionMap
@@ -379,6 +466,11 @@ Resources:
               su -c "/usr/local/tsds/current/postgres/bin/createdb chorus -p 8543 -h ${TSDSDBCluster.Endpoint.Address} -U postgres_chorus" - tsds >> $logfile 2>&1
               su -c "source /usr/local/tsds/chorus_path.sh && /usr/local/tsds/current/postgres/bin/pg_restore -d chorus -p 8543 -h ${TSDSDBCluster.Endpoint.Address} -U postgres_chorus /tmp/chorusdb.dump" >> $logfile 2>&1
 
+              # Relink chorus_control.sh to modified version
+              echo "# Relink chorus_control.sh to modified version..."
+              su -c "rm /usr/local/tsds/chorus_control.sh" - tsds
+              su -c "ln -s /usr/local/tsds/releases/6.4.0.0.9185-00e0ca19f/packaging/chorus_control_qs.sh /usr/local/tsds/chorus_control.sh" - tsds
+
               # Start TSDS
               echo "# Start TIBCO SDS..." >> $logfile 2>&1
               su -c "source /usr/local/tsds/chorus_path.sh && /usr/local/tsds/chorus_control.sh restart" - tsds >> $logfile 2>&1
@@ -399,7 +491,8 @@ Resources:
               # Start TSDS
               echo "# File Found.  Identified as additional node. Running second_run" >> $logfile 2>&1
               echo "# Starting TIBCO SDS..." >> $logfile 2>&1
-              su -c "source /usr/local/tsds/chorus_path.sh && /usr/local/tsds/chorus_control.sh restart" - tsds
+              sleep 3m
+              su -c "source /usr/local/tsds/chorus_path.sh && /usr/local/tsds/chorus_control.sh restart" - tsds >> $logfile 2>&1
             }
 
             #DEBUG
@@ -500,8 +593,328 @@ Resources:
         Ref: ApplicationLoadBalancer
       Port: '8080'
       Protocol: HTTP
+  EMRCluster:
+    Type: 'AWS::EMR::Cluster'
+    Properties:
+      Instances:
+        MasterInstanceGroup:
+          Configurations:
+            - Classification: yarn-site
+              ConfigurationProperties:
+                yarn.scheduler.minimum-allocation-mb: '256'
+                yarn.nodemanager.resource.memory-mb: '17000'
+                yarn.nodemanager.resource.cpu-vcores: '16'
+                yarn.scheduler.maximum-allocation-mb: '8192'
+                yarn.nodemanager.vmem-check-enabled: 'false'
+            - Classification: core-site
+              ConfigurationProperties:
+                hadoop.proxyuser.ec2-user.hosts: '*'
+                hadoop.proxyuser.ec2-user.groups: '*'
+          EbsConfiguration:
+            EbsBlockDeviceConfigs:
+              - VolumeSpecification:
+                  SizeInGB: '200'
+                  VolumeType: standard
+          InstanceCount: 1
+          InstanceType: !Ref EMRMasterInstanceType
+          Market: ON_DEMAND
+          Name: Master
+        CoreInstanceGroup:
+          Configurations:
+            - Classification: yarn-site
+              ConfigurationProperties:
+                yarn.scheduler.minimum-allocation-mb: '256'
+                yarn.nodemanager.resource.memory-mb: '17000'
+                yarn.nodemanager.resource.cpu-vcores: '16'
+                yarn.scheduler.maximum-allocation-mb: '8192'
+                yarn.nodemanager.vmem-check-enabled: 'false'
+            - Classification: core-site
+              ConfigurationProperties:
+                hadoop.proxyuser.ec2-user.hosts: '*'
+                hadoop.proxyuser.ec2-user.groups: '*'
+          EbsConfiguration:
+            EbsBlockDeviceConfigs:
+              - VolumeSpecification:
+                  SizeInGB: 200
+                  VolumeType: standard
+          InstanceCount: !Ref EMRCoreNodes
+          InstanceType: !Ref EMRCoreInstanceType
+          Market: ON_DEMAND
+          Name: Core
+        TerminationProtected: 'false'
+        Ec2KeyName: !Ref KeyPairName
+        Ec2SubnetId: !Ref PrivateSubnet1ID
+        EmrManagedMasterSecurityGroup: !Ref EmrMasterPrivateSecurityGroup
+        EmrManagedSlaveSecurityGroup: !Ref EmrSlavePrivateSecurityGroup
+        AdditionalMasterSecurityGroups:
+          - !Ref EMRSecurityGroup
+        AdditionalSlaveSecurityGroups:
+          - !Ref EMRSecurityGroup
+      Name: !Ref EMRClusterName
+      JobFlowRole: !Ref InstanceProfile
+      ReleaseLabel: emr-5.4.0
+      ServiceRole: EMR_DefaultRole
+      LogUri: !Join
+            - ''
+            - - 's3://'
+              - !Ref EMRLogBucket
+      Applications:
+        - Name: Hive
+        - Name: Hadoop
+      Tags:
+        - Key: prod
+          Value: !Join
+            - ''
+            - - EMR-
+              - !Ref EMRClusterName
+      VisibleToAllUsers: true
+  EMRSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Enable Informatica Domain Access in EMR
+      VpcId: !Ref VPCID
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '8020'
+          ToPort: '8020'
+          SourceSecurityGroupId: !Ref TSDSSecurityGroup
+        - IpProtocol: tcp
+          FromPort: '8032'
+          ToPort: '8032'
+          SourceSecurityGroupId: !Ref TSDSSecurityGroup
+        - IpProtocol: tcp
+          FromPort: '9083'
+          ToPort: '9083'
+          SourceSecurityGroupId: !Ref TSDSSecurityGroup
+        - IpProtocol: tcp
+          FromPort: '10000'
+          ToPort: '10000'
+          SourceSecurityGroupId: !Ref TSDSSecurityGroup
+        - IpProtocol: tcp
+          FromPort: '12300'
+          ToPort: '12600'
+          SourceSecurityGroupId: !Ref TSDSSecurityGroup
+        - IpProtocol: tcp
+          FromPort: '8300'
+          ToPort: '8300'
+          SourceSecurityGroupId: !Ref TSDSSecurityGroup
+        - IpProtocol: tcp
+          FromPort: '50010'
+          ToPort: '50010'
+          SourceSecurityGroupId: !Ref TSDSSecurityGroup
+        - IpProtocol: tcp
+          FromPort: '9090'
+          ToPort: '9090'
+          SourceSecurityGroupId: !Ref TSDSSecurityGroup
+        - IpProtocol: tcp
+          FromPort: '10020'
+          ToPort: '10020'
+          SourceSecurityGroupId: !Ref TSDSSecurityGroup
+        - IpProtocol: tcp
+          FromPort: '9080'
+          ToPort: '9080'
+          SourceSecurityGroupId: !Ref TSDSSecurityGroup
+        - IpProtocol: tcp
+          FromPort: '10000'
+          ToPort: '10000'
+          CidrIp: !Ref AdminConsoleAccessCIDR
+  TCPFromSlaveSecurityGroupIngress:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      FromPort: '0'
+      GroupId: !GetAtt
+        - EmrMasterPrivateSecurityGroup
+        - GroupId
+      IpProtocol: tcp
+      SourceSecurityGroupId: !GetAtt
+        - EmrSlavePrivateSecurityGroup
+        - GroupId
+      ToPort: '65535'
+  TCPFromMasterSecurityGroupIngress:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      FromPort: '0'
+      GroupId: !GetAtt
+        - EmrMasterPrivateSecurityGroup
+        - GroupId
+      IpProtocol: tcp
+      SourceSecurityGroupId: !GetAtt
+        - EmrMasterPrivateSecurityGroup
+        - GroupId
+      ToPort: '65535'
+  ICMPFromSlaveSecurityGroupIngress:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      FromPort: '-1'
+      GroupId: !GetAtt
+        - EmrMasterPrivateSecurityGroup
+        - GroupId
+      IpProtocol: icmp
+      SourceSecurityGroupId: !GetAtt
+        - EmrSlavePrivateSecurityGroup
+        - GroupId
+      ToPort: '-1'
+  ICMPFromMasterSecurityGroupIngress:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      FromPort: '-1'
+      GroupId: !GetAtt
+        - EmrMasterPrivateSecurityGroup
+        - GroupId
+      IpProtocol: icmp
+      SourceSecurityGroupId: !GetAtt
+        - EmrMasterPrivateSecurityGroup
+        - GroupId
+      ToPort: '-1'
+  UDPFromSlaveSecurityGroupIngress:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      FromPort: '0'
+      GroupId: !GetAtt
+        - EmrMasterPrivateSecurityGroup
+        - GroupId
+      IpProtocol: udp
+      SourceSecurityGroupId: !GetAtt
+        - EmrSlavePrivateSecurityGroup
+        - GroupId
+      ToPort: '65535'
+  UDPFromMasterSecurityGroupIngress:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      FromPort: '0'
+      GroupId: !GetAtt
+        - EmrMasterPrivateSecurityGroup
+        - GroupId
+      IpProtocol: udp
+      SourceSecurityGroupId: !GetAtt
+        - EmrMasterPrivateSecurityGroup
+        - GroupId
+      ToPort: '65535'
+  TCPFromSlaveIngress:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      FromPort: '0'
+      GroupId: !GetAtt
+        - EmrSlavePrivateSecurityGroup
+        - GroupId
+      IpProtocol: tcp
+      SourceSecurityGroupId: !GetAtt
+        - EmrSlavePrivateSecurityGroup
+        - GroupId
+      ToPort: '65535'
+  TCPFromMasterIngress:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      FromPort: '0'
+      GroupId: !GetAtt
+        - EmrSlavePrivateSecurityGroup
+        - GroupId
+      IpProtocol: tcp
+      SourceSecurityGroupId: !GetAtt
+        - EmrMasterPrivateSecurityGroup
+        - GroupId
+      ToPort: '65535'
+  ICMPFromSlaveIngress:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      FromPort: '-1'
+      GroupId: !GetAtt
+        - EmrSlavePrivateSecurityGroup
+        - GroupId
+      IpProtocol: icmp
+      SourceSecurityGroupId: !GetAtt
+        - EmrSlavePrivateSecurityGroup
+        - GroupId
+      ToPort: '-1'
+  ICMPFromMasterIngress:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      FromPort: '-1'
+      GroupId: !GetAtt
+        - EmrSlavePrivateSecurityGroup
+        - GroupId
+      IpProtocol: icmp
+      SourceSecurityGroupId: !GetAtt
+        - EmrMasterPrivateSecurityGroup
+        - GroupId
+      ToPort: '-1'
+  UDPFromSlaveIngress:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      FromPort: '0'
+      GroupId: !GetAtt
+        - EmrSlavePrivateSecurityGroup
+        - GroupId
+      IpProtocol: udp
+      SourceSecurityGroupId: !GetAtt
+        - EmrSlavePrivateSecurityGroup
+        - GroupId
+      ToPort: '65535'
+  UDPFromMasterIngress:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      FromPort: '0'
+      GroupId: !GetAtt
+        - EmrSlavePrivateSecurityGroup
+        - GroupId
+      IpProtocol: udp
+      SourceSecurityGroupId: !GetAtt
+        - EmrMasterPrivateSecurityGroup
+        - GroupId
+      ToPort: '65535'
+  TCPMasterEgress:
+    Type: 'AWS::EC2::SecurityGroupEgress'
+    Properties:
+      FromPort: '8443'
+      GroupId: !GetAtt
+        - EmrServiceAccessSecurityGroup
+        - GroupId
+      IpProtocol: tcp
+      DestinationSecurityGroupId: !GetAtt
+        - EmrMasterPrivateSecurityGroup
+        - GroupId
+      ToPort: '8443'
+  TCPSlaveEgress:
+    Type: 'AWS::EC2::SecurityGroupEgress'
+    Properties:
+      FromPort: '8443'
+      GroupId: !GetAtt
+        - EmrServiceAccessSecurityGroup
+        - GroupId
+      IpProtocol: tcp
+      DestinationSecurityGroupId: !GetAtt
+        - EmrSlavePrivateSecurityGroup
+        - GroupId
+      ToPort: '8443'
+  EmrMasterPrivateSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: EMR Master Instance security group
+      VpcId: !Ref VPCID
+  EmrSlavePrivateSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: EMR Slave Instance security group
+      VpcId: !Ref VPCID
+  EmrServiceAccessSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: EMR Service Access security group
+      VpcId: !Ref VPCID
 Outputs:
-  TSDSRestApiURL:
+  TIBCOSDSUIURL:
     Description: URL for Elastic Load Balancer to connect to TSDS 6.4
     Value:
-      Fn::Sub: ${ApplicationLoadBalancer.DNSName}:8080
+      Fn::Sub: http://${ApplicationLoadBalancer.DNSName}:8080
+  TSDSConfigurationLogs:
+    Description: TSDS Configuration Log Location
+    Value: /tmp/cf.log
+  EMRPublicDNS:
+    Description: EMR Resource Manager
+    Value: !Join
+      - ''
+      - - ''
+        - !GetAtt
+          - EMRCluster
+          - MasterPublicDNS
+        - ''

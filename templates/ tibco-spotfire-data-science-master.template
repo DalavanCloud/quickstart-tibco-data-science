@@ -26,7 +26,25 @@ Metadata:
         Parameters:
           - QSS3BucketName
           - QSS3KeyPrefix
+      - Label:
+          default: Amazon EMR Configuration
+        Parameters:
+          - EMRMasterInstanceType
+          - EMRCoreInstanceType
+          - EMRClusterName
+          - EMRCoreNodes
+          - EMRLogBucket
     ParameterLabels:
+      EMRClusterName:
+        default: EMR Cluster Name
+      EMRCoreInstanceType:
+        default: EMR Core Instance Type
+      EMRCoreNodes:
+        default: EMR Core Nodes
+      EMRLogBucket:
+        default: EMR Logs Bucket Name
+      EMRMasterInstanceType:
+        default: EMR Master Instance Type
       AdminConsoleAccessCIDR:
         default: Allowed Admin Web Console External Access CIDR
       AvailabilityZones:
@@ -48,6 +66,36 @@ Metadata:
       QSS3KeyPrefix:
         default: Quick Start S3 Key Prefix
 Parameters:
+  EMRClusterName:
+    Description: Enter a name for your EMR cluster
+    Type: String
+  EMRCoreInstanceType:
+    AllowedValues:
+      - m4.xlarge
+      - m4.2xlarge
+      - m4.4xlarge
+      - m4.10xlarge
+    Default: m4.xlarge
+    Description: Enter the instance type for the EMR core nodes. Default is m4.xlarge
+    Type: String
+  EMRCoreNodes:
+    Description: Enter the number of Core Nodes. Minimum is 1.
+    MaxValue: '500'
+    MinValue: '1'
+    Type: Number
+  EMRLogBucket:
+    Description: Enter the S3 bucket for the EMR logs
+    Type: String
+  EMRMasterInstanceType:
+    AllowedValues:
+      - m4.large
+      - m4.xlarge
+      - m4.2xlarge
+      - m4.4xlarge
+      - m4.10xlarge
+    Default: m4.xlarge
+    Description: Enter the instance type for the EMR master node. Default is m4.xlarge
+    Type: String
   AdminConsoleAccessCIDR:
     AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$
     ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/x
@@ -171,8 +219,7 @@ Resources:
           Fn::Join:
           - ','
           - Ref: AvailabilityZones
-        KeyPairName:
-          Ref: KeyPairName
+        KeyPairName: !Ref KeyPairName
         NumberOfAZs: '2'
   BastionStack:
     DependsOn: VPCStack
@@ -189,10 +236,7 @@ Resources:
         QSS3BucketName: !Ref QSS3BucketName
         QSS3KeyPrefix: !Sub '${QSS3KeyPrefix}submodules/quickstart-linux-bastion/'
         RemoteAccessCIDR: !Ref AdminConsoleAccessCIDR
-        VPCID:
-          Fn::GetAtt:
-          - VPCStack
-          - Outputs.VPCID
+        VPCID: !GetAtt VPCStack.Outputs.VPCID
   TSDSStack:
     DependsOn:
       - VPCStack
@@ -200,43 +244,36 @@ Resources:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
       TemplateURL: !Sub >-
-        https://s3.amazonaws.com/quickstart-tibco-data-science/template/QS_TSDS_6.4_final_v1.0.template
+        https://s3.amazonaws.com/quickstart-tibco-data-science/template/+tibco-spotfire-data-science.template
       Parameters:
-        AdminConsoleAccessCIDR:
-          Ref: AdminConsoleAccessCIDR
-        BastionSecurityGroupID:
-          Fn::GetAtt:
-          - BastionStack
-          - Outputs.BastionSecurityGroupID
-        KeyPairName:
-          Ref: KeyPairName
-        TSDSInstanceName:
-          Ref: TSDSInstanceName
-        TSDSowner:
-          Ref: TSDSowner
-        TSDSInstanceType:
-          Ref: TSDSInstanceType
-        PrivateSubnet1ID:
-          Fn::GetAtt:
-          - VPCStack
-          - Outputs.PrivateSubnet1AID
-        PrivateSubnet2ID:
-          Fn::GetAtt:
-          - VPCStack
-          - Outputs.PrivateSubnet2AID
-        PublicSubnet1ID:
-          Fn::GetAtt:
-          - VPCStack
-          - Outputs.PublicSubnet1ID
-        PublicSubnet2ID:
-          Fn::GetAtt:
-          - VPCStack
-          - Outputs.PublicSubnet2ID
-        VPCID:
-          Fn::GetAtt:
-          - VPCStack
-          - Outputs.VPCID
+        AdminConsoleAccessCIDR: !Ref AdminConsoleAccessCIDR
+        BastionSecurityGroupID: !GetAtt BastionStack.Outputs.BastionSecurityGroupID
+        KeyPairName: !Ref KeyPairName
+        TSDSInstanceName: !Ref TSDSInstanceName
+        TSDSowner: !Ref TSDSowner
+        TSDSInstanceType: !Ref TSDSInstanceType
+        PrivateSubnet1ID: !GetAtt VPCStack.Outputs.PrivateSubnet1AID
+        PrivateSubnet2ID: !GetAtt VPCStack.Outputs.PrivateSubnet2AID
+        PublicSubnet1ID: !GetAtt VPCStack.Outputs.PublicSubnet1ID
+        PublicSubnet2ID: !GetAtt VPCStack.Outputs.PublicSubnet2ID
+        VPCID: !GetAtt VPCStack.Outputs.VPCID
+        QSS3BucketName: !Ref QSS3BucketName
+        QSS3KeyPrefix: !Ref QSS3KeyPrefix
+        EMRMasterInstanceType: !Ref EMRMasterInstanceType
+        EMRCoreInstanceType: !Ref EMRCoreInstanceType
+        EMRClusterName: !Ref EMRClusterName
+        EMRCoreNodes: !Ref EMRCoreNodes
+        EMRLogBucket: !Ref EMRLogBucket
 Outputs:
-  TSDSRestApiURL:
+  BastionSSH:
+    Description: SSH command for accessing bastion with SSH agent forwarding enabled. Remove .pem if needed
+    Value: !Sub 'ssh -i ~/.ssh/${KeyPairName}.pem -A ec2-user@${BastionStack.Outputs.EIP1}'
+  TIBCOSDSUIURL:
     Description: URL for Elastic Load Balancer to connect to REST API
-    Value: !GetAtt TSDSStack.Outputs.TSDSRestApiURL
+    Value: !GetAtt TSDSStack.Outputs.TIBCOSDSUIURL
+  TSDSConfigurationLogs:
+    Description: TSDS Configuration Log Location
+    Value: !GetAtt TSDSStack.Outputs.TSDSConfigurationLogs
+  EMRPublicDNS:
+    Description: EMR DNS used to connect TSDS to EMR Cluster
+    Value: !GetAtt TSDSStack.Outputs.EMRPublicDNS
