@@ -231,6 +231,8 @@ Mappings:
       '64': ami-076997dfc446c148e
     us-east-1:
       '64': ami-06b06190b35ea7b3f
+    us-east-2:
+      '64': ami-076901397b778ff9e
     ap-southeast-1:
       '64': ami-08603a0db5317c067
     eu-west-1:
@@ -568,8 +570,8 @@ Resources:
     Properties:
       Scheme: internet-facing
       Subnets:
-        - !Ref PrivateSubnet1ID
-        - !Ref PrivateSubnet2ID
+        - !Ref PublicSubnet1ID
+        - !Ref PublicSubnet2ID
       SecurityGroups:
         - Ref: TSDSELBSecurityGroup
   ALBTargetGroupTSDSUI:
