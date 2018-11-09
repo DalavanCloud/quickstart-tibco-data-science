@@ -230,7 +230,7 @@ Mappings:
     us-west-2:
       '64': ami-076997dfc446c148e
     us-east-1:
-      '64': ami-06b06190b35ea7b3f
+      '64': ami-0e057d4facc96b5d8
     us-east-2:
       '64': ami-076901397b778ff9e
     ap-southeast-1:
@@ -468,14 +468,10 @@ Resources:
               su -c "/usr/local/tsds/current/postgres/bin/createdb chorus -p 8543 -h ${TSDSDBCluster.Endpoint.Address} -U postgres_chorus" - tsds >> $logfile 2>&1
               su -c "source /usr/local/tsds/chorus_path.sh && /usr/local/tsds/current/postgres/bin/pg_restore -d chorus -p 8543 -h ${TSDSDBCluster.Endpoint.Address} -U postgres_chorus /tmp/chorusdb.dump" >> $logfile 2>&1
 
-              # Relink chorus_control.sh to modified version
-              echo "# Relink chorus_control.sh to modified version..."
-              su -c "rm /usr/local/tsds/chorus_control.sh" - tsds
-              su -c "ln -s /usr/local/tsds/releases/6.4.0.0.9185-00e0ca19f/packaging/chorus_control_qs.sh /usr/local/tsds/chorus_control.sh" - tsds
-
               # Start TSDS
               echo "# Start TIBCO SDS..." >> $logfile 2>&1
               su -c "source /usr/local/tsds/chorus_path.sh && /usr/local/tsds/chorus_control.sh restart" - tsds >> $logfile 2>&1
+              su -c "source /usr/local/tsds/chorus_path.sh && /usr/local/tsds/chorus_control.sh stop postgres" - tsds >> $logfile 2>&1
 
               # Create a file to signal first node has been created
               echo "# Marking this as first node..." >> $logfile 2>&1
@@ -655,7 +651,7 @@ Resources:
           - !Ref EMRSecurityGroup
       Name: !Ref EMRClusterName
       JobFlowRole: !Ref InstanceProfile
-      ReleaseLabel: emr-5.4.0
+      ReleaseLabel: emr-5.10.0
       ServiceRole: EMR_DefaultRole
       LogUri: !Join
             - ''
