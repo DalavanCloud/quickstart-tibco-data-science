@@ -328,6 +328,14 @@ Resources:
         FromPort: '22'
         ToPort: '22'
         SourceSecurityGroupId: !Ref BastionSecurityGroupID
+      - IpProtocol: tcp
+        FromPort: '0'
+        ToPort: '65535'
+        SourceSecurityGroupId: !Ref EmrMasterPrivateSecurityGroup
+      - IpProtocol: tcp
+        FromPort: '0'
+        ToPort: '65535'
+        SourceSecurityGroupId: !Ref EmrSlavePrivateSecurityGroup      
   TSDSELBSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
