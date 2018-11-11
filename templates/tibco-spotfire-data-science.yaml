@@ -358,8 +358,6 @@ Resources:
   LaunchConfiguration:
     Type: 'AWS::AutoScaling::LaunchConfiguration'
     DependsOn:
-      - TSDSDB
-      - TSDSDBCluster
       - TSDSFileSystem
     Properties:
       ImageId:
