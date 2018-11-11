@@ -9,7 +9,7 @@ Metadata:
   'AWS::CloudFormation::Interface':
     ParameterGroups:
     - Label:
-        default: Network Configuration
+        default: Network configuration
       Parameters:
       - VPCID
       - PrivateSubnet1ID
@@ -18,18 +18,22 @@ Metadata:
       - PublicSubnet2ID
       - AdminConsoleAccessCIDR
     - Label:
-        default: Bastion Configuration
+        default: Bastion configuration
       Parameters:
       - KeyPairName
       - BastionSecurityGroupID
     - Label:
-        default: TIBCO Spotfire DS Configuration
+        default: TIBCO Spotfire DS configuration
       Parameters:
       - TSDSowner
       - TSDSInstanceName
       - TSDSInstanceType
     - Label:
-        default: Amazon EMR Configuration
+        default: RDS configuration
+      Parameters:
+      - RDSPassword
+    - Label:
+        default: Amazon EMR configuration
       Parameters:
       - EMRMasterInstanceType
       - EMRCoreInstanceType
@@ -37,14 +41,16 @@ Metadata:
       - EMRCoreNodes
       - EMRLogBucket
     - Label:
-        default: AWS Quick Start Configuration
+          default: '[Optional] TIBCO Spotfire Site Domain configuration'
+      Parameters:
+      - TSDSSiteDomain
+      - ALBSSLCertificateARN
+      - Route53HostedZoneId
+    - Label:
+        default: AWS Quick Start configuration
       Parameters:
       - QSS3BucketName
       - QSS3KeyPrefix
-    - Label:
-        default: Set RDS internal db password
-      Parameters:
-      - RDSPassword
     ParameterLabels:
       RDSPassword:
         default: RDS Internal db password
@@ -84,7 +90,27 @@ Metadata:
         default: Public Subnet 2 ID
       VPCID:
         default: VPC ID
+      TSDSSiteDomain:
+        default: TSDS Site Domain
+      ALBSSLCertificateARN:
+        default: ALB SSL Certificate ARN
+      Route53HostedZoneId:
+        default: Route 53 Hosted Zone ID
 Parameters:
+  ALBSSLCertificateARN:
+    Default: ''
+    Description: '[Optional] The ARN of the SSL certificate to be used for the Application Load Balancer.'
+    Type: String
+  Route53HostedZoneId:
+    Description: '[Optional] Route53 Hosted Zone ID where DNS record for Tibco Spotfire Datascience Site Domain will be added.'
+    Type: String
+    Default: ''
+  TSDSSiteDomain:
+    Description: '[Optional] Domain name of the Tibco Spotfire Datascience site. e.g. example.com. Valid FQDN required when using SSL.'
+    AllowedPattern: (?!-)[a-zA-Z0-9-.]*(?<!-)
+    ConstraintDescription: Must be a valid fully-qualified domain name.
+    Type: String
+    Default: ''
   QSS3BucketName:
     AllowedPattern: '^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$'
     ConstraintDescription: >-
@@ -121,6 +147,7 @@ Parameters:
     Type: String
   EMRCoreNodes:
     Description: Enter the number of Core Nodes. Minimum is 1.
+    Default: '1'
     MaxValue: '500'
     MinValue: '1'
     Type: Number
@@ -143,7 +170,6 @@ Parameters:
     ConstraintDescription: >-
       Must be 8 characters or more containing at least one uppercase letter, one
       lowercase letter, and one number.
-    Default: tibcoAlpine!23
     Description: >-
       DB Password for RDS, Redshift and Portal access. Must be 8 characters or
       more containing at least one uppercase letter, one lowercase letter and
@@ -202,6 +228,10 @@ Parameters:
   VPCID:
     Description: ID of your existing VPC for deployment
     Type: AWS::EC2::VPC::Id
+Conditions:
+  UseALBSSL: !Not [!Equals [!Ref 'ALBSSLCertificateARN', '']]
+  TSDSSiteDomainRoute53Condition: !And [!Not [!Equals [!Ref 'TSDSSiteDomain', '']],
+    !Not [!Equals [!Ref 'Route53HostedZoneId', '']]]
 Rules:
   EFSSupportedRegionRule:
     Assertions:
@@ -612,23 +642,41 @@ Resources:
     Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
     Properties:
       HealthCheckIntervalSeconds: 30
-      HealthyThresholdCount: 5
-      Port: '8080'
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+      Port: 8080
       Protocol: HTTP
       UnhealthyThresholdCount: 5
-      VpcId:
-        Ref: VPCID
-  ELBListenerTSDSUI:
-    Type: 'AWS::ElasticLoadBalancingV2::Listener'
+      VpcId: !Ref 'VPCID'
+      TargetGroupAttributes:
+        - Key: stickiness.enabled
+          Value: 'true'
+        - Key: stickiness.type
+          Value: lb_cookie
+        - Key: stickiness.lb_cookie.duration_seconds
+          Value: '30'
+  ALBListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
       DefaultActions:
         - Type: forward
-          TargetGroupArn:
-            Ref: ALBTargetGroupTSDSUI
-      LoadBalancerArn:
-        Ref: ApplicationLoadBalancer
-      Port: '8080'
-      Protocol: HTTP
+          TargetGroupArn: !Ref 'ALBTargetGroupTSDSUI'
+      LoadBalancerArn: !Ref 'ApplicationLoadBalancer'
+      Port: !If [UseALBSSL, 443, 80]
+      Protocol: !If [UseALBSSL, HTTPS, HTTP]
+      Certificates:
+        - !If [UseALBSSL, {CertificateArn: !Ref 'ALBSSLCertificateARN'}, !Ref 'AWS::NoValue']
+  TSDSSiteDomainRoute53Record:
+    Type: AWS::Route53::RecordSet
+    Condition: TSDSSiteDomainRoute53Condition
+    Properties:
+      Name: !Ref 'TSDSSiteDomain'
+      Type: A
+      HostedZoneId: !Ref 'Route53HostedZoneId'
+      AliasTarget:
+        DNSName: !GetAtt 'ApplicationLoadBalancer.DNSName'
+        EvaluateTargetHealth: 'True'
+        HostedZoneId: !GetAtt 'ApplicationLoadBalancer.CanonicalHostedZoneID'
   EMRCluster:
     Type: 'AWS::EMR::Cluster'
     Properties:
@@ -905,8 +953,12 @@ Resources:
 Outputs:
   TIBCOSDSUIURL:
     Description: URL for Elastic Load Balancer to connect to TSDS 6.4
-    Value:
-      Fn::Sub: http://${ApplicationLoadBalancer.DNSName}:8080
+    Value: !Sub
+      - '${AppScheme}://${AppDomain}'
+      - {
+          AppScheme: !If [UseALBSSL, https, http],
+          AppDomain: !If [TSDSSiteDomainRoute53Condition, !Ref 'TSDSSiteDomain', !GetAtt 'ApplicationLoadBalancer.DNSName']
+        }
   TSDSConfigurationLogs:
     Description: TSDS Configuration Log Location
     Value: /tmp/cf.log
