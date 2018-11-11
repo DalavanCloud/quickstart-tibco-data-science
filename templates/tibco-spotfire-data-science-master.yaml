@@ -34,7 +34,13 @@ Metadata:
           - EMRClusterName
           - EMRCoreNodes
           - EMRLogBucket
+      - Label:
+          default: Set RDS internal db password
+        Parameters:
+          - RDSPassword
     ParameterLabels:
+      RDSPassword:
+        default: RDS Internal db password
       EMRClusterName:
         default: EMR Cluster Name
       EMRCoreInstanceType:
@@ -66,6 +72,22 @@ Metadata:
       QSS3KeyPrefix:
         default: Quick Start S3 Key Prefix
 Parameters:
+  RDSPassword:
+    AllowedPattern: >-
+      (?=^.{6,255}$)((?=.*\d)(?=.*[A-Z])(?=.*[a-z])|(?=.*\d)(?=.*[^A-Za-z0-9])(?=.*[a-z])|(?=.*[^A-Za-z0-9])(?=.*[A-Z])(?=.*[a-z])|(?=.*\d)(?=.*[A-Z])(?=.*[^A-Za-z0-9]))^.*
+    ConstraintDescription: >-
+      Must be 8 characters or more containing at least one uppercase letter, one
+      lowercase letter, and one number.
+    Default: tibcoAlpine!23
+    Description: >-
+      DB Password for RDS, Redshift and Portal access. Must be 8 characters or
+      more containing at least one uppercase letter, one lowercase letter and
+      one number. It can use any printable ASCII characters (ASCII code 33 to
+      126) except ' (single quote), " (double quote) , \, /, @, or space
+    MaxLength: '16'
+    MinLength: '8'
+    NoEcho: 'true'
+    Type: String
   EMRClusterName:
     Description: Enter a name for your EMR cluster
     Type: String
@@ -264,6 +286,7 @@ Resources:
         EMRClusterName: !Ref EMRClusterName
         EMRCoreNodes: !Ref EMRCoreNodes
         EMRLogBucket: !Ref EMRLogBucket
+        RDSPassword: !Ref RDSPassword
 Outputs:
   BastionSSH:
     Description: SSH command for accessing bastion with SSH agent forwarding enabled. Remove .pem if needed

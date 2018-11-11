@@ -41,7 +41,13 @@ Metadata:
       Parameters:
       - QSS3BucketName
       - QSS3KeyPrefix
+    - Label:
+        default: Set RDS internal db password
+      Parameters:
+      - RDSPassword
     ParameterLabels:
+      RDSPassword:
+        default: RDS Internal db password
       QSS3BucketName:
         default: Quick Start S3 Bucket Name
       QSS3KeyPrefix:
@@ -130,13 +136,6 @@ Parameters:
       - m4.10xlarge
     Default: m4.xlarge
     Description: Enter the instance type for the EMR master node. Default is m4.xlarge
-    Type: String
-  RDSUsername:
-    Default: postgres_chorus
-    Description: >-
-      DB Username must start with a letter & no special characters(MinLength=4;MaxLength=20)
-    MaxLength: '16'
-    MinLength: '4'
     Type: String
   RDSPassword:
     AllowedPattern: >-
@@ -228,15 +227,15 @@ Mappings:
     us-west-1:
       '64': ami-0011fcb9bcf4b953c
     us-west-2:
-      '64': ami-076997dfc446c148e
+      '64': ami-04ecdcb2645f5186b
     us-east-1:
-      '64': ami-0e057d4facc96b5d8
+      '64': ami-0afd4faa2c81429d8
     us-east-2:
-      '64': ami-076901397b778ff9e
+      '64': ami-0e92e852c92707493
     ap-southeast-1:
-      '64': ami-08603a0db5317c067
+      '64': ami-045e355c2603ac567
     eu-west-1:
-      '64': ami-0eb1b1c4b08398138
+      '64': ami-080c37c68c3b37648
 Resources:
   InstanceRole:
     Type: 'AWS::IAM::Role'
@@ -290,8 +289,8 @@ Resources:
     Properties:
       Engine: aurora-postgresql
       DBClusterParameterGroupName: default.aurora-postgresql9.6
-      DatabaseName: postgres_chorus
-      MasterUsername: !Ref RDSUsername
+      DatabaseName: chorus
+      MasterUsername: postgres_chorus
       MasterUserPassword: !Ref RDSPassword
       Port: 8543
       DBSubnetGroupName: !Ref DatabaseSubnetGroup
@@ -335,7 +334,7 @@ Resources:
       - IpProtocol: tcp
         FromPort: '0'
         ToPort: '65535'
-        SourceSecurityGroupId: !Ref EmrSlavePrivateSecurityGroup      
+        SourceSecurityGroupId: !Ref EmrSlavePrivateSecurityGroup
   TSDSELBSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
@@ -386,18 +385,18 @@ Resources:
             # if file exists, start second_run
             logfile=/tmp/cf.log
 
-            echo "# Create directory to mount EFS DIR..." >> $logfile 2>&1
             # Script to configure Node 1 of TSDS 6.4
             # Create directory to mount EFS DIR
+            echo "# Create directory to mount EFS DIR..." >> $logfile 2>&1
             mkdir /tsds_efs
 
-            echo "# Mount EFS and add mount to fstab to restore on reboot..." >> $logfile 2>&1
             # Mount EFS and add mount to fstab to restore on reboot
+            echo "# Mount EFS and add mount to fstab to restore on reboot..." >> $logfile 2>&1
             mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport ${TSDSFileSystem}.efs.${AWS::Region}.amazonaws.com:/ /tsds_efs >> $logfile 2>&1
-            echo "${TSDSFileSystem}.efs.${AWS::Region}.amazonaws.com:/ /tsds_efs     nfs4    defaults,_netdev        0       0" >> /etc/fstab >> $logfile 2>&1
+            echo "${TSDSFileSystem}.efs.${AWS::Region}.amazonaws.com:/ /tsds_efs     nfs4    defaults,_netdev        0       0" >> /etc/fstab
 
-            echo "# Rename old install DIR and replace with soft link to new EFS DIR..." >> $logfile 2>&1
             # Rename old install DIR and replace with soft link to new EFS DIR
+            echo "# Rename old install DIR and replace with soft link to new EFS DIR..." >> $logfile 2>&1
             mv /usr/local/tsds /usr/local/tsds_old
             mv /data/tsds/public /data/tsds/public_old
             mv /data/tsds/system /data/tsds/system_old
@@ -405,7 +404,43 @@ Resources:
             ln -s /tsds_efs/data/tsds/public /data/tsds/public
             ln -s /tsds_efs/data/tsds/system /data/tsds/system
 
-            echo "# Load first_run function..." >> $logfile 2>&1
+            # Rename rconnector to r_connector
+            mv /data/rconnector /data/r_connector
+
+            # Run updatehosts.sh to update internal ip address
+            echo "# Run updatehosts.sh to update internal ip address" >> $logfile 2>&1
+            /root/updatehost.sh
+
+            # Make R Service start
+            echo "# Make RService start" >> $logfile 2>&1
+            /data/r_connector/start_services_mod.sh
+
+            # Run python notebooks
+            echo "# Run python notebooks" >> $logfile 2>&1
+            systemctl restart docker
+            cd /data/notebooks
+            docker-compose up -d
+
+            # Copy items to updatehost.sh
+            # Copy Python notebooks autostart
+            echo "Setting Python notebooks to Autostart to update.sh..." >> $logfile 2>&1
+            echo "systemctl restart docker" >> /root/updatehost.sh
+            echo "cd /data/notebooks" >> /root/updatehost.sh
+            echo "docker-compose up -d" >> /root/updatehost.sh
+
+            # Copy R Service Autostart
+            echo "Setting R Service Autostart to update.sh..." >> $logfile 2>&1
+            echo "/data/r_connector/start_services_mod.sh" >> /root/updatehost.sh
+
+            # Copy Mount command to automount
+            echo "Setting Mount config to automount to update.sh..." >> $logfile 2>&1
+            sed -i '2 a mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport ${TSDSFileSystem}.efs.${AWS::Region}.amazonaws.com:/ /tsds_efs/' /root/updatehost.sh
+
+            # make updatehost.sh executable
+            echo "# make updatehost.sh executable" >> $logfile 2>&1
+            chmod +x /etc/rc/d/rc.local
+
+            echo "# Loading first_run function..." >> $logfile 2>&1
             first_run() {
               echo "# Running first_run..." >> $logfile 2>&1
 
@@ -421,11 +456,9 @@ Resources:
               # Copy install DIR to EFS Shared DIR
               echo "# Copy INSTALL and DATA DIR to EFS Shared DIR..." >> $logfile 2>&1
               echo "# Copy INSTALL to EFS Shared DIR..." >> $logfile 2>&1
-
               su -c "cp -a /usr/local/tsds_old/ /tsds_efs/local/tsds" - tsds >> $logfile 2>&1
 
               echo "# Copy DATA to EFS Shared DIR..." >> $logfile 2>&1
-
               su -c "cp -a /data/tsds/public_old/ /tsds_efs/data/tsds/public" - tsds >> $logfile 2>&1
               su -c "cp -a /data/tsds/system_old/ /tsds_efs/data/tsds/system" - tsds >> $logfile 2>&1
 
@@ -456,7 +489,7 @@ Resources:
                 adapter: jdbcpostgresql
                 encoding: unicode
                 database: chorus
-                username: "${RDSUsername}"
+                username: postgres_chorus
                 password: "${RDSPassword}"
                 min_messages: warning
                 host: ${TSDSDBCluster.Endpoint.Address}
@@ -468,7 +501,7 @@ Resources:
               echo "# Updaing .pgpass with RDS information..." >> $logfile 2>&1
               su -c "mv /usr/local/tsds/.pgpass /usr/local/tsds/.pgpass_old" - tsds
               su -c "touch /usr/local/tsds/.pgpass" - tsds
-              echo "*:*:*:${RDSUsername}:${RDSPassword}" >> /usr/local/tsds/.pgpass
+              echo "*:*:*:postgres_chorus:${RDSPassword}" >> /usr/local/tsds/.pgpass
               su -c "chmod 400 /usr/local/tsds/.pgpass" - tsds
 
               # restore postgres
@@ -492,7 +525,7 @@ Resources:
               curl -X PUT -H 'Content-Type:' --data-binary '{"Status" : "SUCCESS","Reason" : "Configuration Complete","UniqueId" : "ID1234","Data" : "Application has completed configuration."}' "${TSDSInstanceWaitHandle}" >> $logfile 2>&1
             }
 
-            echo "Load second_run function" >> $logfile 2>&1
+            echo "# Loading second_run function..." >> $logfile 2>&1
             second_run() {
               # Start TSDS
               echo "# File Found.  Identified as additional node. Running second_run" >> $logfile 2>&1
@@ -501,7 +534,6 @@ Resources:
               su -c "source /usr/local/tsds/chorus_path.sh && /usr/local/tsds/chorus_control.sh restart" - tsds >> $logfile 2>&1
             }
 
-            #DEBUG
             echo "# Entering Conditional Statement..." >> $logfile 2>&1
             if [ ! -f /usr/local/tsds/.nodenum ]; then
               echo "# Entering First Run Fucntion..." >> $logfile 2>&1
@@ -519,7 +551,7 @@ Resources:
     Type: 'AWS::CloudFormation::WaitCondition'
     Properties:
       Handle: !Ref TSDSInstanceWaitHandle
-      Timeout: '5400'
+      Timeout: '6000'
   AutoScalingGroup:
     Type: 'AWS::AutoScaling::AutoScalingGroup'
     DependsOn:
