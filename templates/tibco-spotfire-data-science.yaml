@@ -9,7 +9,7 @@ Metadata:
   'AWS::CloudFormation::Interface':
     ParameterGroups:
     - Label:
-        default: Network Configuration
+        default: Network configuration
       Parameters:
       - VPCID
       - PrivateSubnet1ID
@@ -18,18 +18,23 @@ Metadata:
       - PublicSubnet2ID
       - AdminConsoleAccessCIDR
     - Label:
-        default: Bastion Configuration
+        default: Bastion configuration
       Parameters:
-      - KeyPairName
       - BastionSecurityGroupID
     - Label:
-        default: TIBCO Spotfire DS Configuration
+        default: TIBCO Spotfire DS configuration
       Parameters:
+      - KeyPairName
       - TSDSowner
       - TSDSInstanceName
       - TSDSInstanceType
+      - TSDSInstancePassword
     - Label:
-        default: Amazon EMR Configuration
+        default: RDS configuration
+      Parameters:
+      - RDSPassword
+    - Label:
+        default: Amazon EMR configuration
       Parameters:
       - EMRMasterInstanceType
       - EMRCoreInstanceType
@@ -37,14 +42,16 @@ Metadata:
       - EMRCoreNodes
       - EMRLogBucket
     - Label:
-        default: AWS Quick Start Configuration
+          default: '[Optional] TIBCO Spotfire Site Domain configuration'
+      Parameters:
+      - TSDSSiteDomain
+      - ALBSSLCertificateARN
+      - Route53HostedZoneId
+    - Label:
+        default: AWS Quick Start configuration
       Parameters:
       - QSS3BucketName
       - QSS3KeyPrefix
-    - Label:
-        default: Set RDS internal db password
-      Parameters:
-      - RDSPassword
     ParameterLabels:
       RDSPassword:
         default: RDS Internal db password
@@ -74,6 +81,8 @@ Metadata:
         default: TSDS Instance Name
       TSDSInstanceType:
         default: TSDS Instance Type
+      TSDSInstancePassword:
+        default: TSDS siteadmin Password
       PrivateSubnet1ID:
         default: Private Subnet 1 ID
       PrivateSubnet2ID:
@@ -84,7 +93,27 @@ Metadata:
         default: Public Subnet 2 ID
       VPCID:
         default: VPC ID
+      TSDSSiteDomain:
+        default: TSDS Site Domain
+      ALBSSLCertificateARN:
+        default: ALB SSL Certificate ARN
+      Route53HostedZoneId:
+        default: Route 53 Hosted Zone ID
 Parameters:
+  ALBSSLCertificateARN:
+    Default: ''
+    Description: '[Optional] The ARN of the SSL certificate to be used for the Application Load Balancer.'
+    Type: String
+  Route53HostedZoneId:
+    Description: '[Optional] Route53 Hosted Zone ID where DNS record for Tibco Spotfire Datascience Site Domain will be added.'
+    Type: String
+    Default: ''
+  TSDSSiteDomain:
+    Description: '[Optional] Domain name of the Tibco Spotfire Datascience site. e.g. example.com. Valid FQDN required when using SSL.'
+    AllowedPattern: (?!-)[a-zA-Z0-9-.]*(?<!-)
+    ConstraintDescription: Must be a valid fully-qualified domain name.
+    Type: String
+    Default: ''
   QSS3BucketName:
     AllowedPattern: '^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$'
     ConstraintDescription: >-
@@ -121,6 +150,7 @@ Parameters:
     Type: String
   EMRCoreNodes:
     Description: Enter the number of Core Nodes. Minimum is 1.
+    Default: '1'
     MaxValue: '500'
     MinValue: '1'
     Type: Number
@@ -143,7 +173,6 @@ Parameters:
     ConstraintDescription: >-
       Must be 8 characters or more containing at least one uppercase letter, one
       lowercase letter, and one number.
-    Default: tibcoAlpine!23
     Description: >-
       DB Password for RDS, Redshift and Portal access. Must be 8 characters or
       more containing at least one uppercase letter, one lowercase letter and
@@ -163,6 +192,21 @@ Parameters:
     Description: ID of the bastion host security group to enable SSH connections (e.g.,
       sg-7f16e910)
     Type: AWS::EC2::SecurityGroup::Id
+  TSDSInstancePassword:
+    AllowedPattern: >-
+      (?=^.{6,255}$)((?=.*\d)(?=.*[A-Z])(?=.*[a-z])|(?=.*\d)(?=.*[^A-Za-z0-9])(?=.*[a-z])|(?=.*[^A-Za-z0-9])(?=.*[A-Z])(?=.*[a-z])|(?=.*\d)(?=.*[A-Z])(?=.*[^A-Za-z0-9]))^.*
+    ConstraintDescription: >-
+      Must be 8 characters or more containing at least one uppercase letter, one
+      lowercase letter, and one number.
+    Description: >-
+      DB Password for RDS, Redshift and Portal access. Must be 8 characters or
+      more containing at least one uppercase letter, one lowercase letter and
+      one number. It can use any printable ASCII characters (ASCII code 33 to
+      126) except ' (single quote), " (double quote) , \, /, @, or space
+    MaxLength: '16'
+    MinLength: '8'
+    NoEcho: 'true'
+    Type: String
   TSDSInstanceName:
     Description: Name for the TSDS instance that is deployed to EC2
     Type: String
@@ -202,6 +246,10 @@ Parameters:
   VPCID:
     Description: ID of your existing VPC for deployment
     Type: AWS::EC2::VPC::Id
+Conditions:
+  UseALBSSL: !Not [!Equals [!Ref 'ALBSSLCertificateARN', '']]
+  TSDSSiteDomainRoute53Condition: !And [!Not [!Equals [!Ref 'TSDSSiteDomain', '']],
+    !Not [!Equals [!Ref 'Route53HostedZoneId', '']]]
 Rules:
   EFSSupportedRegionRule:
     Assertions:
@@ -229,7 +277,7 @@ Mappings:
     us-west-2:
       '64': ami-04ecdcb2645f5186b
     us-east-1:
-      '64': ami-0afd4faa2c81429d8
+      '64': ami-0ded1db94003e3ce7
     us-east-2:
       '64': ami-0e92e852c92707493
     ap-southeast-1:
@@ -342,8 +390,8 @@ Resources:
       GroupDescription: Enable access via port 8080
       SecurityGroupIngress:
       - IpProtocol: tcp
-        FromPort: '8080'
-        ToPort: '8080'
+        FromPort: !If [UseALBSSL, 443, 8080]
+        ToPort: !If [UseALBSSL, 443, 8080]
         CidrIp: !Ref AdminConsoleAccessCIDR
   MountTargetSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
@@ -389,9 +437,17 @@ Resources:
             mkdir /tsds_efs
 
             # Mount EFS and add mount to fstab to restore on reboot
-            echo "# Mount EFS and add mount to fstab to restore on reboot..." >> $logfile 2>&1
+            echo "# Mount EFS..." >> $logfile 2>&1
             mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport ${TSDSFileSystem}.efs.${AWS::Region}.amazonaws.com:/ /tsds_efs >> $logfile 2>&1
-            echo "${TSDSFileSystem}.efs.${AWS::Region}.amazonaws.com:/ /tsds_efs     nfs4    defaults,_netdev        0       0" >> /etc/fstab
+
+            # Script to change password to user input
+            echo "# Run script to change password to user input" >> $logfile 2>&1
+            su -c "source /usr/local/tsds/chorus_path.sh && /usr/local/tsds/chorus_control.sh restart" - tsds >> $logfile 2>&1
+            su -c "source /usr/local/tsds/chorus_path.sh && /usr/local/tsds/chorus_control.sh stop" - tsds >> $logfile 2>&1
+            su -c "source /usr/local/tsds/chorus_path.sh && /usr/local/tsds/chorus_control.sh start" - tsds >> $logfile 2>&1
+            su -c "/tmp/chusrp.sh ${TSDSInstancePassword}" - tsds >> $logfile 2>&1
+            su -c "source /usr/local/tsds/chorus_path.sh && /usr/local/tsds/chorus_control.sh stop" - tsds >> $logfile 2>&1
+            rm /tmp/chusrp.sh
 
             # Rename old install DIR and replace with soft link to new EFS DIR
             echo "# Rename old install DIR and replace with soft link to new EFS DIR..." >> $logfile 2>&1
@@ -404,31 +460,43 @@ Resources:
 
             # Rename rconnector to r_connector
             mv /data/rconnector /data/r_connector
+            chown -R tsds:tsds /data/r_connector
 
             # Run updatehosts.sh to update internal ip address
-            echo "# Run updatehosts.sh to update internal ip address" >> $logfile 2>&1
-            /root/updatehost.sh
+            echo "# Run updatehosts.sh to update internal ip address" >> $logfile 2>$1
+            /root/updatehost.sh >> $logfile 2>$1
 
             # Make R Service start
             echo "# Make RService start" >> $logfile 2>&1
-            /data/r_connector/start_services_mod.sh
+            su -c "/data/r_connector/start_services_mod.sh" - tsds >> $logfile 2>&1
 
             # Run python notebooks
             echo "# Run python notebooks" >> $logfile 2>&1
             systemctl restart docker
+            sleep 30s
             cd /data/notebooks
+            docker-compose stop
+            sleep 30s
             docker-compose up -d
 
             # Copy items to updatehost.sh
             # Copy Python notebooks autostart
             echo "Setting Python notebooks to Autostart to update.sh..." >> $logfile 2>&1
             echo "systemctl restart docker" >> /root/updatehost.sh
+            echo "sleep 1m" >> /root/updatehost.sh
             echo "cd /data/notebooks" >> /root/updatehost.sh
+            echo "docker-compose stop" >> /root/updatehost.sh
+            echo "sleep 30s" >> /root/updatehost.sh
             echo "docker-compose up -d" >> /root/updatehost.sh
 
             # Copy R Service Autostart
             echo "Setting R Service Autostart to update.sh..." >> $logfile 2>&1
-            echo "/data/r_connector/start_services_mod.sh" >> /root/updatehost.sh
+            echo "su -c \"/data/r_connector/start_services_mod.sh\" - tsds" >> /root/updatehost.sh
+
+            # Copy Start scripts to Automatically start on reboot
+            echo "su -c \"source /usr/local/tsds/chorus_path.sh && /usr/local/tsds/chorus_control.sh restart\" - tsds" >> /root/updatehost.sh
+            echo "su -c \"source /usr/local/tsds/chorus_path.sh && /usr/local/tsds/chorus_control.sh stop\" - tsds" >> /root/updatehost.sh
+            echo "su -c \"source /usr/local/tsds/chorus_path.sh && /usr/local/tsds/chorus_control.sh start\" - tsds" >> /root/updatehost.sh
 
             # Copy Mount command to automount
             echo "Setting Mount config to automount to update.sh..." >> $logfile 2>&1
@@ -436,7 +504,7 @@ Resources:
 
             # make updatehost.sh executable
             echo "# make updatehost.sh executable" >> $logfile 2>&1
-            chmod +x /etc/rc/d/rc.local
+            chmod +x /etc/rc.d/rc.local
 
             echo "# Loading first_run function..." >> $logfile 2>&1
             first_run() {
@@ -612,23 +680,41 @@ Resources:
     Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
     Properties:
       HealthCheckIntervalSeconds: 30
-      HealthyThresholdCount: 5
-      Port: '8080'
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+      Port: 8080
       Protocol: HTTP
       UnhealthyThresholdCount: 5
-      VpcId:
-        Ref: VPCID
-  ELBListenerTSDSUI:
-    Type: 'AWS::ElasticLoadBalancingV2::Listener'
+      VpcId: !Ref 'VPCID'
+      TargetGroupAttributes:
+        - Key: stickiness.enabled
+          Value: 'true'
+        - Key: stickiness.type
+          Value: lb_cookie
+        - Key: stickiness.lb_cookie.duration_seconds
+          Value: '30'
+  ALBListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
       DefaultActions:
         - Type: forward
-          TargetGroupArn:
-            Ref: ALBTargetGroupTSDSUI
-      LoadBalancerArn:
-        Ref: ApplicationLoadBalancer
-      Port: '8080'
-      Protocol: HTTP
+          TargetGroupArn: !Ref 'ALBTargetGroupTSDSUI'
+      LoadBalancerArn: !Ref 'ApplicationLoadBalancer'
+      Port: !If [UseALBSSL, 443, 8080]
+      Protocol: !If [UseALBSSL, HTTPS, HTTP]
+      Certificates:
+        - !If [UseALBSSL, {CertificateArn: !Ref 'ALBSSLCertificateARN'}, !Ref 'AWS::NoValue']
+  TSDSSiteDomainRoute53Record:
+    Type: AWS::Route53::RecordSet
+    Condition: TSDSSiteDomainRoute53Condition
+    Properties:
+      Name: !Ref 'TSDSSiteDomain'
+      Type: A
+      HostedZoneId: !Ref 'Route53HostedZoneId'
+      AliasTarget:
+        DNSName: !GetAtt 'ApplicationLoadBalancer.DNSName'
+        EvaluateTargetHealth: 'True'
+        HostedZoneId: !GetAtt 'ApplicationLoadBalancer.CanonicalHostedZoneID'
   EMRCluster:
     Type: 'AWS::EMR::Cluster'
     Properties:
@@ -905,17 +991,21 @@ Resources:
 Outputs:
   TIBCOSDSUIURL:
     Description: URL for Elastic Load Balancer to connect to TSDS 6.4
-    Value:
-      Fn::Sub: http://${ApplicationLoadBalancer.DNSName}:8080
+    Value: !Sub
+      - '${AppScheme}://${AppDomain}:${AppPort}'
+      - {
+          AppScheme: !If [UseALBSSL, https, http],
+          AppDomain: !If [TSDSSiteDomainRoute53Condition, !Ref 'TSDSSiteDomain', !GetAtt 'ApplicationLoadBalancer.DNSName'],
+          AppPort: !If [UseALBSSL, 443, 8080]
+        }
   TSDSConfigurationLogs:
     Description: TSDS Configuration Log Location
     Value: /tmp/cf.log
   EMRPublicDNS:
     Description: EMR Resource Manager
-    Value: !Join
-      - ''
-      - - ''
-        - !GetAtt
-          - EMRCluster
-          - MasterPublicDNS
-        - ''
+    Value:
+      Fn::Sub: ${EMRCluster.MasterPublicDNS}
+  EMRHiveURL:
+    Description: EMR Hive thrift URL
+    Value:
+      Fn::Sub: thrift://${EMRCluster.MasterPublicDNS}:9093
