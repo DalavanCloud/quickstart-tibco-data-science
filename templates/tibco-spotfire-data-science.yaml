@@ -42,7 +42,7 @@ Metadata:
       - EMRCoreNodes
       - EMRLogBucket
     - Label:
-          default: '[Optional] TIBCO Spotfire Site Domain configuration'
+        default: '[Optional] TIBCO Spotfire Site Domain configuration'
       Parameters:
       - TSDSSiteDomain
       - ALBSSLCertificateARN
@@ -277,7 +277,7 @@ Mappings:
     us-west-2:
       '64': ami-04ecdcb2645f5186b
     us-east-1:
-      '64': ami-0ded1db94003e3ce7
+      '64': ami-09808e70fa8daf7c1
     us-east-2:
       '64': ami-0e92e852c92707493
     ap-southeast-1:
@@ -318,13 +318,13 @@ Resources:
           Resource:
             Fn::Sub: arn:aws:autoscaling:${AWS::Region}:${AWS::AccountId}:autoScalingGroup:*:autoScalingGroupName/${AutoScalingGroup}
       Roles:
-      - !Ref InstanceRole
+        - !Ref InstanceRole
   InstanceProfile:
     Type: 'AWS::IAM::InstanceProfile'
     Properties:
       Path: /
       Roles:
-      - !Ref InstanceRole
+        - !Ref InstanceRole
   DatabaseSubnetGroup:
     Type: 'AWS::RDS::DBSubnetGroup'
     Properties:
@@ -387,11 +387,11 @@ Resources:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
       VpcId: !Ref VPCID
-      GroupDescription: Enable access via port 8080
+      GroupDescription: Enable access via port 80 for HTTP or port 443 for HTTPS
       SecurityGroupIngress:
       - IpProtocol: tcp
-        FromPort: !If [UseALBSSL, 443, 8080]
-        ToPort: !If [UseALBSSL, 443, 8080]
+        FromPort: !If [UseALBSSL, 443, 80]
+        ToPort: !If [UseALBSSL, 443, 80]
         CidrIp: !Ref AdminConsoleAccessCIDR
   MountTargetSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
@@ -417,7 +417,7 @@ Resources:
       KeyName: !Ref KeyPairName
       EbsOptimized: true
       SecurityGroups:
-      - !Ref TSDSSecurityGroup
+        - !Ref TSDSSecurityGroup
       IamInstanceProfile: !Ref InstanceProfile
       UserData: !Base64
         'Fn::Sub': |
@@ -436,18 +436,27 @@ Resources:
             echo "# Create directory to mount EFS DIR..." >> $logfile 2>&1
             mkdir /tsds_efs
 
+
             # Mount EFS and add mount to fstab to restore on reboot
             echo "# Mount EFS..." >> $logfile 2>&1
             mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport ${TSDSFileSystem}.efs.${AWS::Region}.amazonaws.com:/ /tsds_efs >> $logfile 2>&1
+
+            # Configure Alpine.conf to use EMR agent
+            sed -i '/hadoop.version.cdh54.agents/c\    hadoop.version.cdh54.agents.9.enabled=false' /usr/local/tsds/shared/ALPINE_DATA_REPOSITORY/configuration/alpine.conf
+            sed -i '/hadoop.version.emr5.agents.10.enabled=false/c\    hadoop.version.emr5.agents.10.enabled=true' /usr/local/tsds/shared/ALPINE_DATA_REPOSITORY/configuration/alpine.conf
 
             # Script to change password to user input
             echo "# Run script to change password to user input" >> $logfile 2>&1
             su -c "source /usr/local/tsds/chorus_path.sh && /usr/local/tsds/chorus_control.sh restart" - tsds >> $logfile 2>&1
             su -c "source /usr/local/tsds/chorus_path.sh && /usr/local/tsds/chorus_control.sh stop" - tsds >> $logfile 2>&1
             su -c "source /usr/local/tsds/chorus_path.sh && /usr/local/tsds/chorus_control.sh start" - tsds >> $logfile 2>&1
-            su -c "/tmp/chusrp.sh ${TSDSInstancePassword}" - tsds >> $logfile 2>&1
+            su -c "/tmp/pas.sh ${TSDSInstancePassword}" - tsds >> $logfile 2>&1
             su -c "source /usr/local/tsds/chorus_path.sh && /usr/local/tsds/chorus_control.sh stop" - tsds >> $logfile 2>&1
-            rm /tmp/chusrp.sh
+            rm /tmp/pas.sh
+
+            # Nginx Configuration specific to Quickstart
+            echo "# Configure nginx.erb.conf for quickstart" >> $logfile 2>&1
+            mv /usr/local/tsds/current/vendor/nginx/nginx.conf.erb.qs /usr/local/tsds/current/vendor/nginx/nginx.conf.erb
 
             # Rename old install DIR and replace with soft link to new EFS DIR
             echo "# Rename old install DIR and replace with soft link to new EFS DIR..." >> $logfile 2>&1
@@ -469,6 +478,8 @@ Resources:
             # Make R Service start
             echo "# Make RService start" >> $logfile 2>&1
             su -c "/data/r_connector/start_services_mod.sh" - tsds >> $logfile 2>&1
+            su -c "source /usr/local/tsds/chorus_path.sh && /usr/local/tsds/chorus_control.sh stop" - tsds >> $logfile 2>&1
+
 
             # Run python notebooks
             echo "# Run python notebooks" >> $logfile 2>&1
@@ -500,7 +511,7 @@ Resources:
 
             # Copy Mount command to automount
             echo "Setting Mount config to automount to update.sh..." >> $logfile 2>&1
-            sed -i '2 a mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport ${TSDSFileSystem}.efs.${AWS::Region}.amazonaws.com:/ /tsds_efs/' /root/updatehost.sh
+            echo "${TSDSFileSystem}.efs.${AWS::Region}.amazonaws.com:/ /tsds_efs nfs4 defaults,_netdev  0 0" >> /etc/fstab
 
             # make updatehost.sh executable
             echo "# make updatehost.sh executable" >> $logfile 2>&1
@@ -700,7 +711,7 @@ Resources:
         - Type: forward
           TargetGroupArn: !Ref 'ALBTargetGroupTSDSUI'
       LoadBalancerArn: !Ref 'ApplicationLoadBalancer'
-      Port: !If [UseALBSSL, 443, 8080]
+      Port: !If [UseALBSSL, 443, 80]
       Protocol: !If [UseALBSSL, HTTPS, HTTP]
       Certificates:
         - !If [UseALBSSL, {CertificateArn: !Ref 'ALBSSLCertificateARN'}, !Ref 'AWS::NoValue']
@@ -996,7 +1007,7 @@ Outputs:
       - {
           AppScheme: !If [UseALBSSL, https, http],
           AppDomain: !If [TSDSSiteDomainRoute53Condition, !Ref 'TSDSSiteDomain', !GetAtt 'ApplicationLoadBalancer.DNSName'],
-          AppPort: !If [UseALBSSL, 443, 8080]
+          AppPort: !If [UseALBSSL, 443, 80]
         }
   TSDSConfigurationLogs:
     Description: TSDS Configuration Log Location
