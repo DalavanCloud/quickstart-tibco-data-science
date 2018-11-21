@@ -387,11 +387,11 @@ Resources:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
       VpcId: !Ref VPCID
-      GroupDescription: Enable access via port 80 for HTTP or port 443 for HTTPS
+      GroupDescription: Enable access via port 8080 for HTTP or port 443 for HTTPS
       SecurityGroupIngress:
       - IpProtocol: tcp
-        FromPort: !If [UseALBSSL, 443, 80]
-        ToPort: !If [UseALBSSL, 443, 80]
+        FromPort: !If [UseALBSSL, 443, 8080]
+        ToPort: !If [UseALBSSL, 443, 8080]
         CidrIp: !Ref AdminConsoleAccessCIDR
   MountTargetSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
