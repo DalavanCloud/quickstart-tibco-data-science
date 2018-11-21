@@ -10,41 +10,44 @@ Metadata:
       - Label:
           default: VPC & Bastion configuration
         Parameters:
-          - AvailabilityZones
-          - AdminConsoleAccessCIDR
-          - KeyPairName
-          - BastionAMIOS
-          - BastionInstanceType
+        - AvailabilityZones
+        - AdminConsoleAccessCIDR
+        - BastionAMIOS
+        - BastionInstanceType
       - Label:
           default: TIBCO Spotfire DS configuration
         Parameters:
-          - TSDSowner
-          - TSDSInstanceName
-          - TSDSInstanceType
+        - KeyPairName
+        - TSDSowner
+        - TSDSInstanceName
+        - TSDSInstanceType
+        - TSDSInstancePassword
       - Label:
           default: RDS configuration
         Parameters:
-          - RDSPassword
+        - RDSPassword
       - Label:
           default: Amazon EMR configuration
         Parameters:
-          - EMRMasterInstanceType
-          - EMRCoreInstanceType
-          - EMRClusterName
-          - EMRCoreNodes
-          - EMRLogBucket
+        - EMRMasterInstanceType
+        - EMRCoreInstanceType
+        - EMRClusterName
+        - EMRCoreNodes
+        - EMRLogBucket
       - Label:
           default: '[Optional] TIBCO Spotfire Site Domain configuration'
         Parameters:
-          - TSDSSiteDomain
-          - ALBSSLCertificateARN
-          - Route53HostedZoneId
+        - TSDSSiteDomain
+        - ALBSSLCertificateARN
+        - Route53HostedZoneId
       - Label:
           default: AWS Quick Start configuration
         Parameters:
-          - QSS3BucketName
-          - QSS3KeyPrefix
+        - QSS3BucketName
+        - QSS3KeyPrefix
     ParameterLabels:
+      TSDSInstancePassword:
+        default: TSDS siteadmin Password
       RDSPassword:
         default: RDS Internal db password
       EMRClusterName:
@@ -84,6 +87,21 @@ Metadata:
       Route53HostedZoneId:
         default: Route 53 Hosted Zone ID
 Parameters:
+  TSDSInstancePassword:
+    AllowedPattern: >-
+      (?=^.{6,255}$)((?=.*\d)(?=.*[A-Z])(?=.*[a-z])|(?=.*\d)(?=.*[^A-Za-z0-9])(?=.*[a-z])|(?=.*[^A-Za-z0-9])(?=.*[A-Z])(?=.*[a-z])|(?=.*\d)(?=.*[A-Z])(?=.*[^A-Za-z0-9]))^.*
+    ConstraintDescription: >-
+      Must be 8 characters or more containing at least one uppercase letter, one
+      lowercase letter, and one number.
+    Description: >-
+      DB Password for RDS, Redshift and Portal access. Must be 8 characters or
+      more containing at least one uppercase letter, one lowercase letter and
+      one number. It can use any printable ASCII characters (ASCII code 33 to
+      126) except ' (single quote), " (double quote) , \, /, @, or space
+    MaxLength: '16'
+    MinLength: '8'
+    NoEcho: 'true'
+    Type: String
   ALBSSLCertificateARN:
     Default: ''
     Description: '[Optional] The ARN of the SSL certificate to be used for the Application Load Balancer.'
@@ -316,6 +334,7 @@ Resources:
         ALBSSLCertificateARN: !Ref ALBSSLCertificateARN
         Route53HostedZoneId: !Ref Route53HostedZoneId
         TSDSSiteDomain: !Ref TSDSSiteDomain
+        TSDSInstancePassword: !Ref TSDSInstancePassword
 Outputs:
   BastionSSH:
     Description: SSH command for accessing bastion with SSH agent forwarding enabled. Remove .pem if needed
