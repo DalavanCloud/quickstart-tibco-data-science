@@ -442,13 +442,13 @@ Resources:
             mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport ${TSDSFileSystem}.efs.${AWS::Region}.amazonaws.com:/ /tsds_efs >> $logfile 2>&1
 
             # Configure Alpine.conf to use EMR agent
-            echo "# Is HTTPS enabled?" >> $logfile 2>&1
+            echo "# Is HTTPS selected?" >> $logfile 2>&1
             if [ -z ${ALBSSLCertificateARN} ]; then
+              echo "# - NO. HTTP will be configured..." >> $logfile 2>&1
+            else
               echo "# HTTPS is enabled. Configuring HTTPS..." >> $logfile 2>&1
               sed -i '/hadoop.version.cdh54.agents/c\    hadoop.version.cdh54.agents.9.enabled=false' /usr/local/tsds/shared/ALPINE_DATA_REPOSITORY/configuration/alpine.conf
               sed -i '/hadoop.version.emr5.agents.10.enabled=false/c\    hadoop.version.emr5.agents.10.enabled=true' /usr/local/tsds/shared/ALPINE_DATA_REPOSITORY/configuration/alpine.conf
-            else
-              echo "# HTTP is enabled..." >> $logfile 2>&1
             fi
 
 
