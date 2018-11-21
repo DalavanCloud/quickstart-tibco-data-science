@@ -387,11 +387,11 @@ Resources:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
       VpcId: !Ref VPCID
-      GroupDescription: Enable access via port 80 for HTTP or port 443 for HTTPS
+      GroupDescription: Enable access via port 8080 for HTTP or port 443 for HTTPS
       SecurityGroupIngress:
       - IpProtocol: tcp
-        FromPort: !If [UseALBSSL, 443, 80]
-        ToPort: !If [UseALBSSL, 443, 80]
+        FromPort: !If [UseALBSSL, 443, 8080]
+        ToPort: !If [UseALBSSL, 443, 8080]
         CidrIp: !Ref AdminConsoleAccessCIDR
   MountTargetSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
@@ -442,8 +442,15 @@ Resources:
             mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport ${TSDSFileSystem}.efs.${AWS::Region}.amazonaws.com:/ /tsds_efs >> $logfile 2>&1
 
             # Configure Alpine.conf to use EMR agent
-            sed -i '/hadoop.version.cdh54.agents/c\    hadoop.version.cdh54.agents.9.enabled=false' /usr/local/tsds/shared/ALPINE_DATA_REPOSITORY/configuration/alpine.conf
-            sed -i '/hadoop.version.emr5.agents.10.enabled=false/c\    hadoop.version.emr5.agents.10.enabled=true' /usr/local/tsds/shared/ALPINE_DATA_REPOSITORY/configuration/alpine.conf
+            echo "# Is HTTPS enabled?" >> $logfile 2>&1
+            if [ -z ${ALBSSLCertificateARN} ]; then
+              echo "# HTTPS is enabled. Configuring HTTPS..." >> $logfile 2>&1
+              sed -i '/hadoop.version.cdh54.agents/c\    hadoop.version.cdh54.agents.9.enabled=false' /usr/local/tsds/shared/ALPINE_DATA_REPOSITORY/configuration/alpine.conf
+              sed -i '/hadoop.version.emr5.agents.10.enabled=false/c\    hadoop.version.emr5.agents.10.enabled=true' /usr/local/tsds/shared/ALPINE_DATA_REPOSITORY/configuration/alpine.conf
+            else
+              echo "# HTTP is enabled..." >> $logfile 2>&1
+            fi
+
 
             # Script to change password to user input
             echo "# Run script to change password to user input" >> $logfile 2>&1
@@ -455,7 +462,7 @@ Resources:
             rm /tmp/pas.sh
 
             # Nginx Configuration specific to Quickstart
-            echo "# Configure nginx.erb.conf for quickstart" >> $logfile 2>&1
+            echo "# Configure nginx.erb.conf for quickstart..." >> $logfile 2>&1
             mv /usr/local/tsds/current/vendor/nginx/nginx.conf.erb.qs /usr/local/tsds/current/vendor/nginx/nginx.conf.erb
 
             # Rename old install DIR and replace with soft link to new EFS DIR
@@ -711,7 +718,7 @@ Resources:
         - Type: forward
           TargetGroupArn: !Ref 'ALBTargetGroupTSDSUI'
       LoadBalancerArn: !Ref 'ApplicationLoadBalancer'
-      Port: !If [UseALBSSL, 443, 80]
+      Port: !If [UseALBSSL, 443, 8080]
       Protocol: !If [UseALBSSL, HTTPS, HTTP]
       Certificates:
         - !If [UseALBSSL, {CertificateArn: !Ref 'ALBSSLCertificateARN'}, !Ref 'AWS::NoValue']
@@ -1007,7 +1014,7 @@ Outputs:
       - {
           AppScheme: !If [UseALBSSL, https, http],
           AppDomain: !If [TSDSSiteDomainRoute53Condition, !Ref 'TSDSSiteDomain', !GetAtt 'ApplicationLoadBalancer.DNSName'],
-          AppPort: !If [UseALBSSL, 443, 80]
+          AppPort: !If [UseALBSSL, 443, 8080]
         }
   TSDSConfigurationLogs:
     Description: TSDS Configuration Log Location
