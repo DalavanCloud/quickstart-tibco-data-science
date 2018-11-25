@@ -4,7 +4,7 @@ Description: >-
   deployment of TIBCO Spotfire Data Science 6.4 on AWS. It deploys a VPC with
   bastions. **WARNING** This template creates EC2 instances and related
   resources. You will be billed for the AWS resources used if you create a stack
-  from this template.
+  from this template. (qs-1p2ma2up5)
 Metadata:
   'AWS::CloudFormation::Interface':
     ParameterGroups:

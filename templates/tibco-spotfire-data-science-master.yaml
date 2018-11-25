@@ -3,7 +3,7 @@ Description: >-
   This master template creates a VPC infrastructure for a multi-AZ, multi-tier
   deployment of TIBCO Spotfire Data Science on AWS. It deploys a VPC with bastions. **WARNING**
   This template creates EC2 instances and related resources. You will be billed
-  for the AWS resources used if you create a stack from this template. (qs-1o3ifmu3u)
+  for the AWS resources used if you create a stack from this template. (qs-1p2ma2up0)
 Metadata:
   'AWS::CloudFormation::Interface':
     ParameterGroups:
