@@ -30,7 +30,7 @@ Metadata:
       - TSDSInstanceType
       - TSDSInstancePassword
     - Label:
-        default: RDS configuration
+        default: Amazon RDS configuration
       Parameters:
       - RDSPassword
     - Label:
@@ -54,49 +54,49 @@ Metadata:
       - QSS3KeyPrefix
     ParameterLabels:
       RDSPassword:
-        default: RDS Internal db password
+        default: RDS database password
       QSS3BucketName:
-        default: Quick Start S3 Bucket Name
+        default: Quick Start S3 bucket name
       QSS3KeyPrefix:
-        default: Quick Start S3 Key Prefix
+        default: Quick Start S3 key prefix
       EMRClusterName:
-        default: EMR Cluster Name
+        default: EMR Cluster name
       EMRCoreInstanceType:
-        default: EMR Core Instance Type
+        default: EMR Core instance type
       EMRCoreNodes:
-        default: EMR Core Nodes
+        default: EMR Core nodes
       EMRLogBucket:
-        default: EMR Logs Bucket Name
+        default: EMR Logs bucket name
       EMRMasterInstanceType:
-        default: EMR Master Instance Type
+        default: EMR Master instance type
       AdminConsoleAccessCIDR:
-        default: Allowed Admin Web Console External Access CIDR
+        default: Allowed external access CIDR
       BastionSecurityGroupID:
         default: Bastion Security Group ID
       KeyPairName:
-        default: SSH Key Name
+        default: Key pair name
       TSDSowner:
-        default: TSDS Instance Owner
+        default: TSDS instance owner
       TSDSInstanceName:
-        default: TSDS Instance Name
+        default: TSDS instance name
       TSDSInstanceType:
-        default: TSDS Instance Type
+        default: TSDS tnstance type
       TSDSInstancePassword:
-        default: TSDS siteadmin Password
+        default: TSDS siteadmin password
       PrivateSubnet1ID:
-        default: Private Subnet 1 ID
+        default: Private subnet 1 ID
       PrivateSubnet2ID:
-        default: Private Subnet 2 ID
+        default: Private subnet 2 ID
       PublicSubnet1ID:
-        default: Public Subnet 1 ID
+        default: Public subnet 1 ID
       PublicSubnet2ID:
-        default: Public Subnet 2 ID
+        default: Public subnet 2 ID
       VPCID:
         default: VPC ID
       TSDSSiteDomain:
-        default: TSDS Site Domain
+        default: TSDS Site domain
       ALBSSLCertificateARN:
-        default: ALB SSL Certificate ARN
+        default: ALB SSL certificate ARN
       Route53HostedZoneId:
         default: Route 53 Hosted Zone ID
 Parameters:
@@ -137,7 +137,7 @@ Parameters:
       forward slash (/).
     Type: String
   EMRClusterName:
-    Description: Enter a name for your EMR cluster
+    Description: The name for your EMR cluster.
     Type: String
   EMRCoreInstanceType:
     AllowedValues:
@@ -146,16 +146,16 @@ Parameters:
       - m4.4xlarge
       - m4.10xlarge
     Default: m4.xlarge
-    Description: Enter the instance type for the EMR core nodes. Default is m4.xlarge
+    Description: The instance type for the EMR core nodes.
     Type: String
   EMRCoreNodes:
-    Description: Enter the number of Core Nodes. Minimum is 1.
+    Description: The number of Core Nodes. Minimum is 1.
     Default: '1'
     MaxValue: '500'
     MinValue: '1'
     Type: Number
   EMRLogBucket:
-    Description: Enter the S3 bucket for the EMR logs
+    Description: (Optional) Name of pre-existing S3 bucket for the EMR logs.
     Default: ''
     Type: String
   EMRMasterInstanceType:
@@ -166,7 +166,7 @@ Parameters:
       - m4.4xlarge
       - m4.10xlarge
     Default: m4.xlarge
-    Description: Enter the instance type for the EMR master node. Default is m4.xlarge
+    Description: The instance type for the EMR master node.
     Type: String
   RDSPassword:
     AllowedPattern: >-
@@ -178,7 +178,7 @@ Parameters:
       DB Password for RDS, Redshift and Portal access. Must be 8 characters or
       more containing at least one uppercase letter, one lowercase letter and
       one number. It can use any printable ASCII characters (ASCII code 33 to
-      126) except ' (single quote), " (double quote) , \, /, @, or space
+      126) except ' (single quote), " (double quote) , \, /, @, or space.
     MaxLength: '16'
     MinLength: '8'
     NoEcho: 'true'
@@ -191,7 +191,7 @@ Parameters:
     Type: String
   BastionSecurityGroupID:
     Description: ID of the bastion host security group to enable SSH connections (e.g.,
-      sg-7f16e910)
+      sg-7f16e910).
     Type: AWS::EC2::SecurityGroup::Id
   TSDSInstancePassword:
     AllowedPattern: >-
@@ -209,7 +209,7 @@ Parameters:
     NoEcho: 'true'
     Type: String
   TSDSInstanceName:
-    Description: Name for the TSDS instance that is deployed to EC2
+    Description: Name for the TSDS instance that is deployed to EC2.
     Type: String
     Default: tsds
   TSDSInstanceType:
@@ -218,34 +218,34 @@ Parameters:
       - m5.4xlarge
     ConstraintDescription: Must contain valid instance type
     Default: m5.2xlarge
-    Description: Type of EC2 instance for TIBCO Spotfire DS 6.4 AMI
+    Description: Type of EC2 instance for TIBCO Spotfire DS 6.4 AMI.
     Type: String
   KeyPairName:
     Description: Name of an existing EC2 key pair. All instances will launch with
       this key pair.
     Type: AWS::EC2::KeyPair::KeyName
   TSDSowner:
-    Description: Set Owner tag for the TIBCO Spotfire Data Science instance
+    Description: Set Owner tag for the TIBCO Spotfire Data Science instance.
     Default: tsds-owner
     Type: String
   PrivateSubnet1ID:
-    Description: ID of private subnet 1 in Availability Zone 1 for the TSDS instances
-      (e.g., subnet-a0246dcd)
+    Description: ID of private subnet 1 in Availability Zone 1 for the TSDS instances.
+      (e.g., subnet-a0246dcd).
     Type: AWS::EC2::Subnet::Id
   PrivateSubnet2ID:
-    Description: ID of private subnet 2 in Availability Zone 2 for the TSDS instances
-      (e.g., subnet-b1f432cd)
+    Description: ID of private subnet 2 in Availability Zone 2 for the TSDS instances.
+      (e.g., subnet-b1f432cd).
     Type: AWS::EC2::Subnet::Id
   PublicSubnet1ID:
-    Description: ID of public subnet 1 in Availability Zone 1 for the ELB load balancer
-      (e.g., subnet-9bc642ac)
+    Description: ID of public subnet 1 in Availability Zone 1 for the ELB load balancer.
+      (e.g., subnet-9bc642ac).
     Type: AWS::EC2::Subnet::Id
   PublicSubnet2ID:
-    Description: ID of public subnet 2 in Availability Zone 2 for the ELB load balancer
-      (e.g., subnet-e3246d8e)
+    Description: ID of public subnet 2 in Availability Zone 2 for the ELB load balancer.
+      (e.g., subnet-e3246d8e).
     Type: AWS::EC2::Subnet::Id
   VPCID:
-    Description: ID of your existing VPC for deployment
+    Description: ID of your existing VPC for deployment.
     Type: AWS::EC2::VPC::Id
 Conditions:
   UseALBSSL: !Not [!Equals [!Ref 'ALBSSLCertificateARN', '']]
