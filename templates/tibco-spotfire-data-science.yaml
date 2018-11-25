@@ -274,26 +274,26 @@ Rules:
         one of these regions
 Mappings:
   AWSAMIRegionMap:
-    us-west-1:
-      '64': ami-0d1729a03a12f076a
-    us-west-2:
-      '64': ami-0bcbd135ed957c30e
-    us-east-1:
-      '64': ami-0bfe5ec701b0e9190
-    us-east-2:
-      '64': ami-064a86de5d203702a
-    ap-southeast-1:
-      '64': ami-0958f112c2b6795ed
-    ap-southeast-2:
-      '64': ami-0df2b41f1727b7506
-    eu-west-1:
-      '64': ami-09fa993e3cd4b2476
-    eu-central-1:
-      '64': ami-04f73b5e5aff41229
     ap-northeast-1:
-      '64': ami-087b14e644e57fff3
+      '64': ami-004079861b0430d09
     ap-northeast-2:
-      '64': ami-0f53fb8a29098aa8d
+      '64': ami-054d362c489876db0
+    ap-southeast-1:
+      '64': ami-0cdd6ededcbdabd24
+    ap-southeast-2:
+      '64': ami-06b184a965638d7c3
+    eu-central-1:
+      '64': ami-0c1cdf700645ac5f7
+    eu-west-1:
+      '64': ami-0066a3487aa6170a4
+    us-east-1:
+      '64': ami-073a4c1ff56737312
+    us-east-2:
+      '64': ami-0332955c4fc096b2a
+    us-west-1:
+      '64': ami-07de2387d1592110d
+    us-west-2:
+      '64': ami-0726fbfc2277ecdcb
 Resources:
   InstanceRole:
     Type: 'AWS::IAM::Role'
