@@ -282,6 +282,8 @@ Mappings:
       '64': ami-0bfe5ec701b0e9190
     us-east-2:
       '64': ami-064a86de5d203702a
+    ap-southeast-1:
+      '64': ami-0958f112c2b6795ed
     ap-southeast-2:
       '64': ami-0df2b41f1727b7506
     eu-west-1:
