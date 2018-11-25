@@ -348,3 +348,6 @@ Outputs:
   EMRPublicDNS:
     Description: EMR DNS used to connect TSDS to EMR Cluster
     Value: !GetAtt TSDSStack.Outputs.EMRPublicDNS
+  EMRHiveURL:
+    Description: EMR Hive thrift URL
+    Value: !GetAtt TSDSStack.Outputs.EMRHiveURL
