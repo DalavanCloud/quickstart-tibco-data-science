@@ -1,0 +1,58 @@
+[
+    {
+        "ParameterValue": "$[taskcat_getkeypair]",
+        "ParameterKey": "KeyPairName"
+    },
+    {
+        "ParameterValue": "$[taskcat_autobucket]",
+        "ParameterKey": "QSS3BucketName"
+    },
+    {
+        "ParameterValue": "t2.micro",
+        "ParameterKey": "BastionInstanceType"
+    },
+    {
+        "ParameterValue": "m5.2xlarge",
+        "ParameterKey": "TSDSInstanceType"
+    },
+    {
+        "ParameterValue": "$[taskcat_genaz_2]",
+        "ParameterKey": "AvailabilityZones"
+    },
+    {
+        "ParameterValue": "$[taskcat_random-string]",
+        "ParameterKey": "TSDSowner"
+    },
+    {
+        "ParameterValue": "Amazon-Linux-HVM",
+        "ParameterKey": "BastionAMIOS"
+    },
+    {
+        "ParameterValue": "quickstart-tibco-spotfire-data-science/",
+        "ParameterKey": "QSS3KeyPrefix"
+    },
+    {
+        "ParameterValue": "$[taskcat_random-string]",
+        "ParameterKey": "TSDSInstanceName"
+    },
+    {
+        "ParameterValue": "10.0.0.0/16",
+        "ParameterKey": "AdminConsoleAccessCIDR"
+    },
+    {
+        "ParameterValue": "1",
+        "ParameterKey": "EMRCoreNodes"
+    },
+    {
+        "ParameterValue": "$[taskcat_genpass_12A]",
+        "ParameterKey": "RDSPassword"
+    },
+    {
+        "ParameterValue": "$[taskcat_random-string]",
+        "ParameterKey": "EMRClusterName"
+    },
+    {
+        "ParameterKey": "TSDSInstancePassword",
+        "ParameterValue": "$[taskcat_genpass_12A]"
+    }
+]

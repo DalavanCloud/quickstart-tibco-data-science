@@ -151,6 +151,7 @@ Parameters:
     Type: Number
   EMRLogBucket:
     Description: Enter the S3 bucket for the EMR logs
+    Default: ''
     Type: String
   EMRMasterInstanceType:
     AllowedValues:

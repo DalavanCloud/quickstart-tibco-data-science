@@ -156,6 +156,7 @@ Parameters:
     Type: Number
   EMRLogBucket:
     Description: Enter the S3 bucket for the EMR logs
+    Default: ''
     Type: String
   EMRMasterInstanceType:
     AllowedValues:
@@ -248,6 +249,7 @@ Parameters:
     Type: AWS::EC2::VPC::Id
 Conditions:
   UseALBSSL: !Not [!Equals [!Ref 'ALBSSLCertificateARN', '']]
+  EMRBucketProvided: !Not [!Equals [!Ref EMRLogBucket, '']]
   TSDSSiteDomainRoute53Condition: !And [!Not [!Equals [!Ref 'TSDSSiteDomain', '']],
     !Not [!Equals [!Ref 'Route53HostedZoneId', '']]]
 Rules:
@@ -812,19 +814,13 @@ Resources:
       JobFlowRole: !Ref InstanceProfile
       ReleaseLabel: emr-5.10.0
       ServiceRole: EMR_DefaultRole
-      LogUri: !Join
-            - ''
-            - - 's3://'
-              - !Ref EMRLogBucket
+      LogUri: !If [EMRBucketProvided, !Sub 's3://${EMRLogBucket}', !Ref 'AWS::NoValue']
       Applications:
         - Name: Hive
         - Name: Hadoop
       Tags:
         - Key: prod
-          Value: !Join
-            - ''
-            - - EMR-
-              - !Ref EMRClusterName
+          Value: !Sub 'EMR-${EMRClusterName}'
       VisibleToAllUsers: true
   EMRSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
