@@ -26,6 +26,7 @@ Metadata:
           default: Amazon RDS configuration
         Parameters:
         - RDSPassword
+        - DBMultiAZ
       - Label:
           default: Amazon EMR configuration
         Parameters:
@@ -50,6 +51,8 @@ Metadata:
         default: TSDS siteadmin password
       RDSPassword:
         default: RDS database password
+      DBMultiAZ:
+        default: Multi-AZ database
       EMRClusterName:
         default: EMR Cluster name
       EMRCoreInstanceType:
@@ -85,7 +88,7 @@ Metadata:
       ALBSSLCertificateARN:
         default: ALB SSL certificate ARN
       Route53HostedZoneId:
-        default: Route 53 Hosted Zone ID
+        default: Route 53 hosted zone ID
 Parameters:
   TSDSInstancePassword:
     AllowedPattern: >-
@@ -130,6 +133,13 @@ Parameters:
     MaxLength: '16'
     MinLength: '8'
     NoEcho: 'true'
+    Type: String
+  DBMultiAZ:
+    AllowedValues:
+      - 'true'
+      - 'false'
+    Default: 'true'
+    Description: Specifies if the database instance is a multiple Availability Zone deployment.
     Type: String
   EMRClusterName:
     Description: The name for your EMR cluster.
@@ -332,6 +342,7 @@ Resources:
         EMRCoreNodes: !Ref EMRCoreNodes
         EMRLogBucket: !Ref EMRLogBucket
         RDSPassword: !Ref RDSPassword
+        DBMultiAZ: !Ref DBMultiAZ
         ALBSSLCertificateARN: !Ref ALBSSLCertificateARN
         Route53HostedZoneId: !Ref Route53HostedZoneId
         TSDSSiteDomain: !Ref TSDSSiteDomain
