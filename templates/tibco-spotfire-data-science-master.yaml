@@ -15,7 +15,7 @@ Metadata:
         - BastionAMIOS
         - BastionInstanceType
       - Label:
-          default: TIBCO Spotfire DS configuration
+          default: TIBCO Spotfire Site Domain configuration (Optional)
         Parameters:
         - KeyPairName
         - TSDSowner
@@ -54,15 +54,15 @@ Metadata:
       DBMultiAZ:
         default: Multi-AZ database
       EMRClusterName:
-        default: EMR Cluster name
+        default: EMR cluster name
       EMRCoreInstanceType:
-        default: EMR Core instance type
+        default: EMR core instance type
       EMRCoreNodes:
-        default: EMR Core nodes
+        default: EMR core nodes
       EMRLogBucket:
-        default: EMR Logs bucket name
+        default: EMR cogs bucket name
       EMRMasterInstanceType:
-        default: EMR Master instance type
+        default: EMR master instance type
       AdminConsoleAccessCIDR:
         default: Allowed external access CIDR
       AvailabilityZones:
@@ -97,7 +97,7 @@ Parameters:
       Must be 8 characters or more containing at least one uppercase letter, one
       lowercase letter, and one number.
     Description: >-
-      DB Password for RDS, Redshift and Portal access. Must be 8 characters or
+      The password for the siteadmin user to access the TIBCO Spotfire Data Science web console. Must be 8 characters or
       more containing at least one uppercase letter, one lowercase letter and
       one number. It can use any printable ASCII characters (ASCII code 33 to
       126) except ' (single quote), " (double quote) , \, /, @, or space.
@@ -107,14 +107,14 @@ Parameters:
     Type: String
   ALBSSLCertificateARN:
     Default: ''
-    Description: '[Optional] The ARN of the SSL certificate to be used for the Application Load Balancer.'
+    Description: '(Optional) The Amazon Resource Name (ARN) of the SSL certificate to be used for the Application Load Balancer.'
     Type: String
   Route53HostedZoneId:
-    Description: '[Optional] Route53 Hosted Zone ID where DNS record for Tibco Spotfire Datascience Site Domain will be added.'
+    Description: '(Optional) The Route53 hosted zone ID where the DNS record for TIBCO Spotfire Data Science site domain will be added.'
     Type: String
     Default: ''
   TSDSSiteDomain:
-    Description: '[Optional] Domain name of the Tibco Spotfire Datascience site. e.g. example.com. Valid FQDN required when using SSL.'
+    Description: '(Optional) The domain name of the TIBCO Spotfire Data Science site; e.g. example.com. A valid Fully Qualified Domain Name is required when using SSL.'
     AllowedPattern: (?!-)[a-zA-Z0-9-.]*(?<!-)
     ConstraintDescription: Must be a valid fully-qualified domain name.
     Type: String
@@ -126,10 +126,7 @@ Parameters:
       Must be 8 characters or more containing at least one uppercase letter, one
       lowercase letter, and one number.
     Description: >-
-      DB Password for RDS, Redshift and Portal access. Must be 8 characters or
-      more containing at least one uppercase letter, one lowercase letter and
-      one number. It can use any printable ASCII characters (ASCII code 33 to
-      126) except ' (single quote), " (double quote) , \, /, @, or space.
+      Database password for Amazon RDS Aurora database. Must be 8 characters or more containing at least one uppercase letter, one lowercase letter and one number. It can use any printable ASCII characters (ASCII code 33 to 126) except ' (single quote), " (double quote) , \, /, @, or space.
     MaxLength: '16'
     MinLength: '8'
     NoEcho: 'true'
@@ -139,7 +136,7 @@ Parameters:
       - 'true'
       - 'false'
     Default: 'true'
-    Description: Specifies if the database instance is a multiple Availability Zone deployment.
+    Description: Specifies that the database instance is a multiple Availability Zone deployment.
     Type: String
   EMRClusterName:
     Description: The name for your EMR cluster.
@@ -154,13 +151,13 @@ Parameters:
     Description: The instance type for the EMR core nodes.
     Type: String
   EMRCoreNodes:
-    Description: The number of Core Nodes. Minimum is 1.
+    Description: The number of core nodes. The minimum is 1; the maximum is 500.
     Default: '1'
     MaxValue: '500'
     MinValue: '1'
     Type: Number
   EMRLogBucket:
-    Description: '(Optional) Name of pre-existing S3 bucket for the EMR logs.'
+    Description: '(Optional) The name of a pre-existing S3 bucket for the EMR logs.'
     Default: ''
     Type: String
   EMRMasterInstanceType:
@@ -176,8 +173,7 @@ Parameters:
   AdminConsoleAccessCIDR:
     AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$
     ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/x
-    Description: The CIDR IP range that is permitted to access the TIBCO Spotfire Data Science Web Console
-      via the ELB. We recommend that you set this value to a trusted IP range.
+    Description: The CIDR IP range that is permitted to access the TIBCO Spotfire Data Science web console via the Application Load Balancer. We recommend that you set this value to a trusted IP range.
     Type: String
   AvailabilityZones:
     Description: >-
@@ -226,14 +222,14 @@ Parameters:
       - m5.4xlarge
     ConstraintDescription: Must contain valid instance type
     Default: m5.2xlarge
-    Description: Type of EC2 instance for TIBCO Spotfire DS 6.4 AMI.
+    Description: The type of EC2 instance for the TIBCO Spotfire Data Science 6.4 AMI.
     Type: String
   TSDSInstanceName:
-    Description: Name for the TIBCO Spotfire Data Science instance that is deployed to EC2.
+    Description: The name for the TIBCO Spotfire Data Science instance that is deployed to EC2.
     Type: String
     Default: TSDS
   TSDSowner:
-    Description: Set Owner tag for the TIBCO Spotfire Data Science instance.
+    Description: The Owner tag for the TIBCO Spotfire Data Science instance.
     Default: tsds-owner
     Type: String
   QSS3BucketName:
