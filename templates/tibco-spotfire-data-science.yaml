@@ -43,7 +43,7 @@ Metadata:
       - EMRCoreNodes
       - EMRLogBucket
     - Label:
-        default: '[Optional] TIBCO Spotfire Site Domain configuration'
+        default: '(Optional) TIBCO Spotfire Site Domain configuration'
       Parameters:
       - TSDSSiteDomain
       - ALBSSLCertificateARN
@@ -63,15 +63,15 @@ Metadata:
       QSS3KeyPrefix:
         default: Quick Start S3 key prefix
       EMRClusterName:
-        default: EMR Cluster name
+        default: EMR cluster name
       EMRCoreInstanceType:
-        default: EMR Core instance type
+        default: EMR core instance type
       EMRCoreNodes:
-        default: EMR Core nodes
+        default: EMR core nodes
       EMRLogBucket:
-        default: EMR Logs bucket name
+        default: EMR logs bucket name
       EMRMasterInstanceType:
-        default: EMR Master instance type
+        default: EMR master instance type
       AdminConsoleAccessCIDR:
         default: Allowed external access CIDR
       BastionSecurityGroupID:
@@ -83,7 +83,7 @@ Metadata:
       TSDSInstanceName:
         default: TSDS instance name
       TSDSInstanceType:
-        default: TSDS tnstance type
+        default: TSDS instance type
       TSDSInstancePassword:
         default: TSDS siteadmin password
       PrivateSubnet1ID:
@@ -105,14 +105,14 @@ Metadata:
 Parameters:
   ALBSSLCertificateARN:
     Default: ''
-    Description: '[Optional] The ARN of the SSL certificate to be used for the Application Load Balancer.'
+    Description: '(Optional) The ARN of the SSL certificate to be used for the Application Load Balancer.'
     Type: String
   Route53HostedZoneId:
-    Description: '[Optional] Route53 Hosted Zone ID where DNS record for Tibco Spotfire Datascience Site Domain will be added.'
+    Description: '(Optional) The Route53 hosted zone ID where the DNS record for the TIBCO Spotfire Data Science site domain will be added.'
     Type: String
     Default: ''
   TSDSSiteDomain:
-    Description: '[Optional] Domain name of the Tibco Spotfire Datascience site. e.g. example.com. Valid FQDN required when using SSL.'
+    Description: '(Optional) The domain name of the TIBCO Spotfire Data Science site; e.g, example.com. A valid Fully Qualified Domain Name is required when using SSL.'
     AllowedPattern: (?!-)[a-zA-Z0-9-.]*(?<!-)
     ConstraintDescription: Must be a valid fully-qualified domain name.
     Type: String
@@ -152,13 +152,13 @@ Parameters:
     Description: The instance type for the EMR core nodes.
     Type: String
   EMRCoreNodes:
-    Description: The number of Core Nodes. Minimum is 1.
+    Description: The number of core nodes. The minimum is 1; the maximum is 500.
     Default: '1'
     MaxValue: '500'
     MinValue: '1'
     Type: Number
   EMRLogBucket:
-    Description: (Optional) Name of pre-existing S3 bucket for the EMR logs.
+    Description: (Optional) The name of the pre-existing S3 bucket for the EMR logs.
     Default: ''
     Type: String
   EMRMasterInstanceType:
@@ -191,13 +191,13 @@ Parameters:
       - 'true'
       - 'false'
     Default: 'true'
-    Description: Specifies if the database instance is a multiple Availability Zone deployment.
+    Description: Specifies that the database instance is a multiple Availability Zone deployment.
     Type: String
   AdminConsoleAccessCIDR:
     AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$
     ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/x
-    Description: The CIDR IP range that is permitted to access the TIBCO Spotfire Data Science Web Console
-      via the ELB. We recommend that you set this value to a trusted IP range.
+    Description: The CIDR IP range that is permitted to access the TIBCO Spotfire Data Science web console via the Application Load Balancer.
+      We recommend that you set this value to a trusted IP range.
     Type: String
   BastionSecurityGroupID:
     Description: ID of the bastion host security group to enable SSH connections (e.g.,
@@ -210,10 +210,9 @@ Parameters:
       Must be 8 characters or more containing at least one uppercase letter, one
       lowercase letter, and one number.
     Description: >-
-      DB Password for RDS, Redshift and Portal access. Must be 8 characters or
-      more containing at least one uppercase letter, one lowercase letter and
-      one number. It can use any printable ASCII characters (ASCII code 33 to
-      126) except ' (single quote), " (double quote) , \, /, @, or space
+      The password for the siteadmin user to access the TIBCO Spotfire Data Science web console.
+      Must be 8 characters or more containing at least one uppercase letter, one lowercase letter and one number.
+      It can use any printable ASCII characters (ASCII code 33 to 126) except ' (single quote), " (double quote) , \, /, @, or space.
     MaxLength: '16'
     MinLength: '8'
     NoEcho: 'true'
@@ -235,27 +234,23 @@ Parameters:
       this key pair.
     Type: AWS::EC2::KeyPair::KeyName
   TSDSowner:
-    Description: Set Owner tag for the TIBCO Spotfire Data Science instance.
+    Description: The Owner tag for the TIBCO Spotfire Data Science instance.
     Default: tsds-owner
     Type: String
   PrivateSubnet1ID:
-    Description: ID of private subnet 1 in Availability Zone 1 for the TSDS instances.
-      (e.g., subnet-a0246dcd).
+    Description: The ID of the private subnet in Availability Zone 1 for the TSDS instances (e.g., subnet-a0246dcd).
     Type: AWS::EC2::Subnet::Id
   PrivateSubnet2ID:
-    Description: ID of private subnet 2 in Availability Zone 2 for the TSDS instances.
-      (e.g., subnet-b1f432cd).
+    Description: The ID of the private subnet in Availability Zone 2 for the TSDS instances (e.g., subnet-b1f432cd).
     Type: AWS::EC2::Subnet::Id
   PublicSubnet1ID:
-    Description: ID of public subnet 1 in Availability Zone 1 for the ELB load balancer.
-      (e.g., subnet-9bc642ac).
+    Description: The ID of the public subnet in Availability Zone 1 for the Application Load Balancer (e.g., subnet-9bc642ac).
     Type: AWS::EC2::Subnet::Id
   PublicSubnet2ID:
-    Description: ID of public subnet 2 in Availability Zone 2 for the ELB load balancer.
-      (e.g., subnet-e3246d8e).
+    Description: The ID of the private subnet in Availability Zone 2 for the Application Load Balancer. (e.g., subnet-e3246d8e).
     Type: AWS::EC2::Subnet::Id
   VPCID:
-    Description: ID of your existing VPC for deployment.
+    Description: The ID of your existing VPC (e.g., vpc-0343606e).
     Type: AWS::EC2::VPC::Id
 Conditions:
   UseALBSSL: !Not [!Equals [!Ref 'ALBSSLCertificateARN', '']]

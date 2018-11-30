@@ -60,7 +60,7 @@ Metadata:
       EMRCoreNodes:
         default: EMR core nodes
       EMRLogBucket:
-        default: EMR cogs bucket name
+        default: EMR logs bucket name
       EMRMasterInstanceType:
         default: EMR master instance type
       AdminConsoleAccessCIDR:
