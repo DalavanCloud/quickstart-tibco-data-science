@@ -1,7 +1,7 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: >-
   This CF template creates a VPC infrastructure for a multi-AZ, multi-tier
-  deployment of TIBCO Spotfire Data Science 6.4 on AWS. It deploys a VPC with
+  deployment of TIBCO Data Science 6.4 on AWS. It deploys a VPC with
   bastions. **WARNING** This template creates EC2 instances and related
   resources. You will be billed for the AWS resources used if you create a stack
   from this template. (qs-1p2ma2up5)
@@ -22,7 +22,7 @@ Metadata:
       Parameters:
       - BastionSecurityGroupID
     - Label:
-        default: TIBCO Spotfire DS configuration
+        default: TIBCO Data Science configuration
       Parameters:
       - KeyPairName
       - TSDSowner
@@ -43,7 +43,7 @@ Metadata:
       - EMRCoreNodes
       - EMRLogBucket
     - Label:
-        default: '(Optional) TIBCO Spotfire Site Domain configuration'
+        default: TIBCO Data Science Site Domain configuration (Optional)
       Parameters:
       - TSDSSiteDomain
       - ALBSSLCertificateARN
@@ -79,13 +79,13 @@ Metadata:
       KeyPairName:
         default: Key pair name
       TSDSowner:
-        default: TSDS instance owner
+        default: TDS instance owner
       TSDSInstanceName:
-        default: TSDS instance name
+        default: TDS instance name
       TSDSInstanceType:
-        default: TSDS instance type
+        default: TDS instance type
       TSDSInstancePassword:
-        default: TSDS siteadmin password
+        default: TDS siteadmin password
       PrivateSubnet1ID:
         default: Private subnet 1 ID
       PrivateSubnet2ID:
@@ -97,7 +97,7 @@ Metadata:
       VPCID:
         default: VPC ID
       TSDSSiteDomain:
-        default: TSDS Site domain
+        default: TDS Site domain
       ALBSSLCertificateARN:
         default: ALB SSL certificate ARN
       Route53HostedZoneId:
@@ -108,11 +108,11 @@ Parameters:
     Description: '(Optional) The ARN of the SSL certificate to be used for the Application Load Balancer.'
     Type: String
   Route53HostedZoneId:
-    Description: '(Optional) The Route53 hosted zone ID where the DNS record for the TIBCO Spotfire Data Science site domain will be added.'
+    Description: '(Optional) The Route53 hosted zone ID where the DNS record for the TIBCO Data Science site domain will be added.'
     Type: String
     Default: ''
   TSDSSiteDomain:
-    Description: '(Optional) The domain name of the TIBCO Spotfire Data Science site; e.g, example.com. A valid Fully Qualified Domain Name is required when using SSL.'
+    Description: '(Optional) The domain name of the TIBCO Data Science site; e.g, example.com. A valid Fully Qualified Domain Name is required when using SSL.'
     AllowedPattern: (?!-)[a-zA-Z0-9-.]*(?<!-)
     ConstraintDescription: Must be a valid fully-qualified domain name.
     Type: String
@@ -133,7 +133,7 @@ Parameters:
     ConstraintDescription: >-
       Quick Start key prefix can include numbers, lowercase letters, uppercase
       letters, hyphens (-), and forward slash (/).
-    Default: quickstart-tibco-spotfire-data-science/
+    Default: quickstart-tibco-data-science/
     Description: >-
       S3 key prefix for the Quick Start assets. Quick Start key prefix can
       include numbers, lowercase letters, uppercase letters, hyphens (-), and
@@ -196,7 +196,7 @@ Parameters:
   AdminConsoleAccessCIDR:
     AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$
     ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/x
-    Description: The CIDR IP range that is permitted to access the TIBCO Spotfire Data Science web console via the Application Load Balancer.
+    Description: The CIDR IP range that is permitted to access the TIBCO Data Science web console via the Application Load Balancer.
       We recommend that you set this value to a trusted IP range.
     Type: String
   BastionSecurityGroupID:
@@ -210,7 +210,7 @@ Parameters:
       Must be 8 characters or more containing at least one uppercase letter, one
       lowercase letter, and one number.
     Description: >-
-      The password for the siteadmin user to access the TIBCO Spotfire Data Science web console.
+      The password for the siteadmin user to access the TIBCO Data Science web console.
       Must be 8 characters or more containing at least one uppercase letter, one lowercase letter and one number.
       It can use any printable ASCII characters (ASCII code 33 to 126) except ' (single quote), " (double quote) , \, /, @, or space.
     MaxLength: '16'
@@ -218,30 +218,30 @@ Parameters:
     NoEcho: 'true'
     Type: String
   TSDSInstanceName:
-    Description: Name for the TSDS instance that is deployed to EC2.
+    Description: Name for the TIBCO Data Science instance that is deployed to EC2.
     Type: String
-    Default: tsds
+    Default: TIBCO-DS
   TSDSInstanceType:
     AllowedValues:
       - m5.2xlarge
       - m5.4xlarge
     ConstraintDescription: Must contain valid instance type
     Default: m5.2xlarge
-    Description: Type of EC2 instance for TIBCO Spotfire DS 6.4 AMI.
+    Description: Type of EC2 instance for TIBCO Data Science 6.4 AMI.
     Type: String
   KeyPairName:
     Description: Name of an existing EC2 key pair. All instances will launch with
       this key pair.
     Type: AWS::EC2::KeyPair::KeyName
   TSDSowner:
-    Description: The Owner tag for the TIBCO Spotfire Data Science instance.
-    Default: tsds-owner
+    Description: The Owner tag for the TIBCO Data Science instance.
+    Default: tibco-ds-owner
     Type: String
   PrivateSubnet1ID:
-    Description: The ID of the private subnet in Availability Zone 1 for the TSDS instances (e.g., subnet-a0246dcd).
+    Description: The ID of the private subnet in Availability Zone 1 for the TIBCO Data Science instances (e.g., subnet-a0246dcd).
     Type: AWS::EC2::Subnet::Id
   PrivateSubnet2ID:
-    Description: The ID of the private subnet in Availability Zone 2 for the TSDS instances (e.g., subnet-b1f432cd).
+    Description: The ID of the private subnet in Availability Zone 2 for the TIBCO Data Science instances (e.g., subnet-b1f432cd).
     Type: AWS::EC2::Subnet::Id
   PublicSubnet1ID:
     Description: The ID of the public subnet in Availability Zone 1 for the Application Load Balancer (e.g., subnet-9bc642ac).
@@ -369,7 +369,7 @@ Resources:
       DBInstanceClass: db.r4.large
       Tags:
         - Key: Name
-          Value: TSDS-Aurora-PrimaryDB
+          Value: TDS-Aurora-PrimaryDB
   TSDSDBSecondary:
     Type: 'AWS::RDS::DBInstance'
     Condition: CreateReadReplica
@@ -380,7 +380,7 @@ Resources:
       DBInstanceClass: db.r4.large
       Tags:
         - Key: Name
-          Value: TSDS-Aurora-SecondaryDB
+          Value: TDS-Aurora-SecondaryDB
   DBSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
@@ -395,7 +395,7 @@ Resources:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
       VpcId: !Ref VPCID
-      GroupDescription: Enable TSDS UI access via port 8080 through ALB and port 22 through Bastion
+      GroupDescription: Enable TIBCO Data Science UI access via port 8080 through ALB and port 22 through Bastion
       SecurityGroupIngress:
       - IpProtocol: tcp
         FromPort: '8080'
@@ -802,8 +802,8 @@ Resources:
         EMRMasterInstanceType: !Ref EMRMasterInstanceType
         KeyPairName: !Ref KeyPairName
 Outputs:
-  TIBCOSDSUIURL:
-    Description: URL for Elastic Load Balancer to connect to TSDS 6.4
+  TDSWebConsoleURL:
+    Description: URL to connect to TDS Web Console
     Value: !Sub
       - '${AppScheme}://${AppDomain}:${AppPort}'
       - {
@@ -811,8 +811,8 @@ Outputs:
           AppDomain: !If [TSDSSiteDomainRoute53Condition, !Ref 'TSDSSiteDomain', !GetAtt 'ApplicationLoadBalancer.DNSName'],
           AppPort: !If [UseALBSSL, 443, 8080]
         }
-  TSDSConfigurationLogs:
-    Description: TSDS Configuration Log Location
+  TDSConfigurationLogs:
+    Description: TDS Configuration Log Location
     Value: /tmp/cf.log
   EMRPublicDNS:
     Description: EMR Resource Manager

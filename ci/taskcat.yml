@@ -1,7 +1,7 @@
 global:
   marketplace-ami: true
   owner: quickstart-eng@amazon.com
-  qsname: quickstart-tibco-spotfire-data-science
+  qsname: quickstart-tibco-data-science
   regions:
     - ap-northeast-1
     - ap-northeast-2
@@ -16,6 +16,6 @@ global:
   reporting: true
 
 tests:
-  tibco-tsds:
-    parameter_input: tsds-params.json
-    template_file: tibco-spotfire-data-science-master.yaml
+  tibco-ds:
+    parameter_input: tds-params.json
+    template_file: tibco-data-science-master.yaml

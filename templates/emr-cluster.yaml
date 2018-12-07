@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: >-
-  This template sets up an EMR cluster for use with your TIBCO Spotfire Data Science instance.
+  This template sets up an EMR cluster for use with your TIBCO Data Science instance.
 Parameters:
   EMRClusterName:
     Description: The name for your EMR cluster.
@@ -37,21 +37,21 @@ Parameters:
   AdminConsoleAccessCIDR:
     AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$
     ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/x
-    Description: The CIDR IP range that is permitted to access the TIBCO Spotfire Data Science Web Console
+    Description: The CIDR IP range that is permitted to access the TIBCO Data Science Web Console
       via the ELB. We recommend that you set this value to a trusted IP range.
     Type: String
   InstanceProfile:
     Description: Name of the Instance Profile used with EMR Cluster
     Type: String
   TSDSSecurityGroupId:
-    Description: ID of the TSDS Security Group
+    Description: ID of the TIBCO Data Science Instance Security Group
     Type: AWS::EC2::SecurityGroup::Id
   KeyPairName:
     Description: Name of an existing EC2 key pair. All instances will launch with
       this key pair.
     Type: AWS::EC2::KeyPair::KeyName
   PrivateSubnet1ID:
-    Description: ID of private subnet 1 in Availability Zone 1 for the TSDS instances.
+    Description: ID of private subnet 1 in Availability Zone 1 for the TDS instances.
       (e.g., subnet-a0246dcd).
     Type: AWS::EC2::Subnet::Id
   VPCID:

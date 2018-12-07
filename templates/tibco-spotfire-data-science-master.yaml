@@ -1,7 +1,7 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: >-
   This master template creates a VPC infrastructure for a multi-AZ, multi-tier
-  deployment of TIBCO Spotfire Data Science on AWS. It deploys a VPC with bastions. **WARNING**
+  deployment of TIBCO Data Science on AWS. It deploys a VPC with bastions. **WARNING**
   This template creates EC2 instances and related resources. You will be billed
   for the AWS resources used if you create a stack from this template. (qs-1p2ma2up0)
 Metadata:
@@ -15,7 +15,7 @@ Metadata:
         - BastionAMIOS
         - BastionInstanceType
       - Label:
-          default: TIBCO Spotfire Site Domain configuration (Optional)
+          default: TIBCO Data Science Site Domain configuration (Optional)
         Parameters:
         - KeyPairName
         - TSDSowner
@@ -36,7 +36,7 @@ Metadata:
         - EMRCoreNodes
         - EMRLogBucket
       - Label:
-          default: '[Optional] TIBCO Spotfire Site Domain configuration'
+          default: '[Optional] TIBCO Site Domain configuration'
         Parameters:
         - TSDSSiteDomain
         - ALBSSLCertificateARN
@@ -48,7 +48,7 @@ Metadata:
         - QSS3KeyPrefix
     ParameterLabels:
       TSDSInstancePassword:
-        default: TSDS siteadmin password
+        default: TDS siteadmin password
       RDSPassword:
         default: RDS database password
       DBMultiAZ:
@@ -72,11 +72,11 @@ Metadata:
       BastionInstanceType:
         default: Bastion instance type
       TSDSowner:
-        default: TSDS instance owner
+        default: TDS instance owner
       TSDSInstanceName:
-        default: TSDS instance name
+        default: TDS instance name
       TSDSInstanceType:
-        default: TSDS instance type
+        default: TDS instance type
       KeyPairName:
         default: Key pair name
       QSS3BucketName:
@@ -84,7 +84,7 @@ Metadata:
       QSS3KeyPrefix:
         default: Quick Start S3 key prefix
       TSDSSiteDomain:
-        default: TSDS Site domain
+        default: TDS Site domain
       ALBSSLCertificateARN:
         default: ALB SSL certificate ARN
       Route53HostedZoneId:
@@ -97,7 +97,7 @@ Parameters:
       Must be 8 characters or more containing at least one uppercase letter, one
       lowercase letter, and one number.
     Description: >-
-      The password for the siteadmin user to access the TIBCO Spotfire Data Science web console. Must be 8 characters or
+      The password for the siteadmin user to access the TIBCO Data Science web console. Must be 8 characters or
       more containing at least one uppercase letter, one lowercase letter and
       one number. It can use any printable ASCII characters (ASCII code 33 to
       126) except ' (single quote), " (double quote) , \, /, @, or space.
@@ -110,11 +110,11 @@ Parameters:
     Description: '(Optional) The Amazon Resource Name (ARN) of the SSL certificate to be used for the Application Load Balancer.'
     Type: String
   Route53HostedZoneId:
-    Description: '(Optional) The Route53 hosted zone ID where the DNS record for TIBCO Spotfire Data Science site domain will be added.'
+    Description: '(Optional) The Route53 hosted zone ID where the DNS record for TIBCO Data Science site domain will be added.'
     Type: String
     Default: ''
   TSDSSiteDomain:
-    Description: '(Optional) The domain name of the TIBCO Spotfire Data Science site; e.g. example.com. A valid Fully Qualified Domain Name is required when using SSL.'
+    Description: '(Optional) The domain name of the TIBCO Data Science site; e.g. example.com. A valid Fully Qualified Domain Name is required when using SSL.'
     AllowedPattern: (?!-)[a-zA-Z0-9-.]*(?<!-)
     ConstraintDescription: Must be a valid fully-qualified domain name.
     Type: String
@@ -173,7 +173,7 @@ Parameters:
   AdminConsoleAccessCIDR:
     AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$
     ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/x
-    Description: The CIDR IP range that is permitted to access the TIBCO Spotfire Data Science web console via the Application Load Balancer. We recommend that you set this value to a trusted IP range.
+    Description: The CIDR IP range that is permitted to access the TIBCO Data Science web console via the Application Load Balancer. We recommend that you set this value to a trusted IP range.
     Type: String
   AvailabilityZones:
     Description: >-
@@ -222,15 +222,15 @@ Parameters:
       - m5.4xlarge
     ConstraintDescription: Must contain valid instance type
     Default: m5.2xlarge
-    Description: The type of EC2 instance for the TIBCO Spotfire Data Science 6.4 AMI.
+    Description: The type of EC2 instance for the TIBCO Data Science 6.4 AMI.
     Type: String
   TSDSInstanceName:
-    Description: The name for the TIBCO Spotfire Data Science instance that is deployed to EC2.
+    Description: The name for the TIBCO Data Science instance that is deployed to EC2.
     Type: String
-    Default: TSDS
+    Default: TIBCO-DS
   TSDSowner:
-    Description: The Owner tag for the TIBCO Spotfire Data Science instance.
-    Default: tsds-owner
+    Description: The Owner tag for the TIBCO Data Science instance.
+    Default: tibco-ds-owner
     Type: String
   QSS3BucketName:
     AllowedPattern: '^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$'
@@ -248,7 +248,7 @@ Parameters:
     ConstraintDescription: >-
       Quick Start key prefix can include numbers, lowercase letters, uppercase
       letters, hyphens (-), and forward slash (/).
-    Default: quickstart-tibco-spotfire-data-science/
+    Default: quickstart-tibco-data-science/
     Description: >-
       S3 key prefix for the Quick Start assets. Quick Start key prefix can
       include numbers, lowercase letters, uppercase letters, hyphens (-), and
@@ -317,7 +317,7 @@ Resources:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
       TemplateURL: !Sub >-
-        https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/tibco-spotfire-data-science.yaml
+        https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/tibco-data-science.yaml
       Parameters:
         AdminConsoleAccessCIDR: !Ref AdminConsoleAccessCIDR
         BastionSecurityGroupID: !GetAtt BastionStack.Outputs.BastionSecurityGroupID
@@ -347,14 +347,14 @@ Outputs:
   BastionSSH:
     Description: SSH command for accessing bastion with SSH agent forwarding enabled. Remove .pem if needed
     Value: !Sub 'ssh -i ~/.ssh/${KeyPairName}.pem -A ec2-user@${BastionStack.Outputs.EIP1}'
-  TIBCOSDSUIURL:
-    Description: URL for Elastic Load Balancer to connect to REST API
-    Value: !GetAtt TSDSStack.Outputs.TIBCOSDSUIURL
-  TSDSConfigurationLogs:
-    Description: TSDS Configuration Log Location
-    Value: !GetAtt TSDSStack.Outputs.TSDSConfigurationLogs
+  TDSWebConsoleURL:
+    Description: URL to connect to TDS Web Console
+    Value: !GetAtt TSDSStack.Outputs.TDSWebConsoleURL
+  TDSConfigurationLogs:
+    Description: TDS Configuration Log Location
+    Value: !GetAtt TSDSStack.Outputs.TDSConfigurationLogs
   EMRPublicDNS:
-    Description: EMR DNS used to connect TSDS to EMR Cluster
+    Description: EMR DNS used to connect TDS to EMR Cluster
     Value: !GetAtt TSDSStack.Outputs.EMRPublicDNS
   EMRHiveURL:
     Description: EMR Hive thrift URL

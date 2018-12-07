@@ -28,7 +28,7 @@
         "ParameterKey": "BastionAMIOS"
     },
     {
-        "ParameterValue": "quickstart-tibco-spotfire-data-science/",
+        "ParameterValue": "quickstart-tibco-data-science/",
         "ParameterKey": "QSS3KeyPrefix"
     },
     {
