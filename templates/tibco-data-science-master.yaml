@@ -15,7 +15,7 @@ Metadata:
         - BastionAMIOS
         - BastionInstanceType
       - Label:
-          default: TIBCO Data Science Site Domain configuration (Optional)
+          default: TIBCO Data Science configuration
         Parameters:
         - KeyPairName
         - TSDSowner
@@ -36,7 +36,7 @@ Metadata:
         - EMRCoreNodes
         - EMRLogBucket
       - Label:
-          default: '[Optional] TIBCO Site Domain configuration'
+          default: TIBCO Data Science Site Domain configuration (Optional)
         Parameters:
         - TSDSSiteDomain
         - ALBSSLCertificateARN
