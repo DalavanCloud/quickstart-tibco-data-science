@@ -11,7 +11,7 @@ You can use the AWS CloudFormation templates included with the Quick Start to de
 
 You can also use the AWS CloudFormation templates as a starting point for your own implementation.
 
-![Quick Start architecture for TIBCO Data Science on AWS](https://s3.amazonaws.com/aws-cfn-samples/aws-quickstart/quickstart-tibco-spotfire-data-science/doc/TSDS-Architecture.png) 
+![Quick Start architecture for TIBCO Data Science on AWS](https://d0.awsstatic.com/partner-network/QuickStart/datasheets/tibco-data-science-on-aws-architecture-diagram.png) 
 
 For architectural details and step-by-step instructions, see the [deployment guide](https://fwd.aws/46W8x).
 
